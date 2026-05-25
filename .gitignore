@@ -1,0 +1,47 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+dist/
+.next/
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Runtime artifacts
+*.log
+
+# Audio tool generated files
+VoltaWebPage/backend/uploads/
+VoltaWebPage/backend/processed/
+VoltaWebPage/backend/test_input.wav
+VoltaWebPage/backend/.venv/
+VoltaWebPage/backend/.venv313/
+
+# Ignore old Vite prototype files at VoltaWebPage root
+VoltaWebPage/index.html
+VoltaWebPage/package.json
+VoltaWebPage/package-lock.json
+VoltaWebPage/vite.config.js
+VoltaWebPage/src/

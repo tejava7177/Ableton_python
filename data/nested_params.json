@@ -1,0 +1,74 @@
+{
+  "Device On": {
+    "max": 1.0,
+    "min": 0.0,
+    "value": 1.0,
+    "id": 1
+  },
+  "Left Inv": {
+    "max": 1.0,
+    "min": 0.0,
+    "value": 0.0,
+    "id": 2
+  },
+  "Right Inv": {
+    "max": 1.0,
+    "min": 0.0,
+    "value": 0.0,
+    "id": 6
+  },
+  "Channel Mode": {
+    "max": 3.0,
+    "min": 0.0,
+    "value": 1.0,
+    "id": 5
+  },
+  "Stereo Width": {
+    "max": 2.0,
+    "min": 0.0,
+    "value": 1.0,
+    "id": 7
+  },
+  "Mono": {
+    "max": 1.0,
+    "min": 0.0,
+    "value": 0.0,
+    "id": 8
+  },
+  "Bass Mono": {
+    "max": 1.0,
+    "min": 0.0,
+    "value": 0.0,
+    "id": 9
+  },
+  "Bass Freq": {
+    "max": 1.0,
+    "min": 0.0,
+    "value": 0.380211,
+    "id": 14
+  },
+  "Balance": {
+    "max": 1.0,
+    "min": -1.0,
+    "value": 0.0,
+    "id": 10
+  },
+  "Gain": {
+    "max": 1.0,
+    "min": -1.0,
+    "value": 0.5,
+    "id": 12
+  },
+  "Mute": {
+    "max": 1.0,
+    "min": 0.0,
+    "value": 0.0,
+    "id": 11
+  },
+  "DC Filter": {
+    "max": 1.0,
+    "min": 0.0,
+    "value": 0.0,
+    "id": 15
+  }
+}
