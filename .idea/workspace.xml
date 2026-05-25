@@ -5,8 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ab7991b8-9af1-4c55-a9b7-3f72bff0b342" name="Changes" comment="기본세팅">
-      <change afterPath="$PROJECT_DIR$/data/flat_params.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VoltaWebPage/backend/routers/audio.py" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/backend/routers/audio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VoltaWebPage/backend/services/audio_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/backend/services/audio_processing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/tools/low-high-cut/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/tools/low-high-cut/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,29 +27,42 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 1
-}]]></component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;tejava7177&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/tejava7177/Ableton_python.git&quot;,
+    &quot;accountId&quot;: &quot;6074c0f3-8873-4e9d-80e6-070b9199ab5e&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1
+}</component>
   <component name="ProjectId" id="3Ch6xJ5w2Q0Cbb8uUQNEOX6sHhn" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.main.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/simjuheun/Desktop/myProject/Ableton_python&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Ableton_python" />
@@ -93,6 +110,9 @@
       <option name="presentableId" value="Default" />
       <updated>1776825699567</updated>
       <workItem from="1776825700592" duration="5677000" />
+      <workItem from="1779684876878" duration="2434000" />
+      <workItem from="1779690388316" duration="539000" />
+      <workItem from="1779690929724" duration="680000" />
     </task>
     <task id="LOCAL-00001" summary="기본세팅">
       <option name="closed" value="true" />

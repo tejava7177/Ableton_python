@@ -36,6 +36,7 @@ coverage/
 VoltaWebPage/backend/uploads/
 VoltaWebPage/backend/processed/
 VoltaWebPage/backend/test_input.wav
+VoltaWebPage/backend/trim_test.wav
 VoltaWebPage/backend/.venv/
 VoltaWebPage/backend/.venv313/
 

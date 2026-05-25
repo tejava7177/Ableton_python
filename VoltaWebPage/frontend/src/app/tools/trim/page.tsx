@@ -6,6 +6,8 @@ import {
   AudioLines,
   Download,
   LoaderCircle,
+  ScissorsLineDashed,
+  Search,
   SlidersHorizontal,
   Upload,
   Waves,
@@ -22,24 +24,58 @@ type AnalyzeResponse = {
   original_file_url: string;
 };
 
-type ProcessResponse = {
+type SilenceRegion = {
+  start: number;
+  end: number;
+  duration: number;
+  type: "start" | "internal" | "end";
+};
+
+type DetectSilenceResponse = {
+  duration: number;
+  silence_regions: SilenceRegion[];
+};
+
+type TrimResponse = {
   processed_file_url: string;
-  analysis_before: {
-    peak_dbfs: number;
-    rms_dbfs: number;
-  };
-  analysis_after: {
-    peak_dbfs: number;
-    rms_dbfs: number;
-  };
+  original_duration: number;
+  processed_duration: number;
+  removed_duration: number;
+  silence_regions: SilenceRegion[];
   applied: {
-    low_cut_hz: number;
-    high_cut_hz: number;
+    threshold_db: number;
+    min_silence_ms: number;
+    padding_ms: number;
+    mode: TrimMode;
   };
 };
 
+type TrimMode = "start_end_only" | "remove_internal" | "shorten_internal";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+
+const trimModes: Array<{
+  value: TrimMode;
+  title: string;
+  detail: string;
+}> = [
+  {
+    value: "start_end_only",
+    title: "Trim Start/End Only",
+    detail: "파일 앞/뒤 무음만 제거하고 내부 무음은 유지합니다.",
+  },
+  {
+    value: "remove_internal",
+    title: "Remove Internal Silence",
+    detail: "중간 무음도 제거하고 구간 연결부에는 짧은 페이드를 적용합니다.",
+  },
+  {
+    value: "shorten_internal",
+    title: "Shorten Internal Silence",
+    detail: "중간 무음을 완전히 없애지 않고 padding 길이 정도만 남깁니다.",
+  },
+];
 
 const waveformBars = Array.from({ length: 48 }, (_, index) => ({
   id: index,
@@ -54,6 +90,10 @@ function formatDbfs(value: number) {
   return `${value.toFixed(2)} dBFS`;
 }
 
+function formatMilliseconds(seconds: number) {
+  return `${Math.round(seconds * 1000)}ms`;
+}
+
 async function parseError(response: Response) {
   try {
     const data = await response.json();
@@ -63,30 +103,37 @@ async function parseError(response: Response) {
   }
 }
 
-export default function LowHighCutPage() {
+export default function TrimPage() {
   const [file, setFile] = useState<File | null>(null);
   const [originalPreviewUrl, setOriginalPreviewUrl] = useState<string>("");
   const [analysis, setAnalysis] = useState<AnalyzeResponse | null>(null);
-  const [processed, setProcessed] = useState<ProcessResponse | null>(null);
-  const [lowCutHz, setLowCutHz] = useState<number>(80);
-  const [highCutHz, setHighCutHz] = useState<number>(18000);
+  const [silenceData, setSilenceData] = useState<DetectSilenceResponse | null>(null);
+  const [trimResult, setTrimResult] = useState<TrimResponse | null>(null);
+  const [thresholdDb, setThresholdDb] = useState<number>(-45);
+  const [minSilenceMs, setMinSilenceMs] = useState<number>(150);
+  const [paddingMs, setPaddingMs] = useState<number>(20);
+  const [mode, setMode] = useState<TrimMode>("start_end_only");
   const [error, setError] = useState<string>("");
+  const [info, setInfo] = useState<string>("");
   const [analyzing, setAnalyzing] = useState(false);
+  const [detecting, setDetecting] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   const processedFileUrl = useMemo(() => {
-    if (!processed?.processed_file_url) {
+    if (!trimResult?.processed_file_url) {
       return "";
     }
-    return `${API_BASE_URL}${processed.processed_file_url}`;
-  }, [processed]);
+    return `${API_BASE_URL}${trimResult.processed_file_url}`;
+  }, [trimResult]);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] ?? null;
-    setProcessed(null);
+    setTrimResult(null);
+    setSilenceData(null);
     setAnalysis(null);
     setError("");
+    setInfo("");
 
     if (!selectedFile) {
       setFile(null);
@@ -134,37 +181,55 @@ export default function LowHighCutPage() {
     }
   };
 
-  const handleApplyFilter = async () => {
+  const validateSettings = () => {
+    if (thresholdDb < -80 || thresholdDb > -20) {
+      return "Silence Threshold는 -80 dBFS에서 -20 dBFS 사이여야 합니다.";
+    }
+    if (minSilenceMs < 50 || minSilenceMs > 2000) {
+      return "Min Silence Duration은 50ms에서 2000ms 사이여야 합니다.";
+    }
+    if (paddingMs < 0 || paddingMs > 500) {
+      return "Padding은 0ms에서 500ms 사이여야 합니다.";
+    }
+    return "";
+  };
+
+  const buildDetectionFormData = () => {
+    if (!file) {
+      return null;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("threshold_db", String(thresholdDb));
+    formData.append("min_silence_ms", String(minSilenceMs));
+    formData.append("padding_ms", String(paddingMs));
+    return formData;
+  };
+
+  const handleDetectSilence = async () => {
     setError("");
+    setInfo("");
+    setTrimResult(null);
 
     if (!file) {
       setError("먼저 WAV 파일을 업로드해 주세요.");
       return;
     }
 
-    if (lowCutHz < 20 || lowCutHz > 1000) {
-      setError("Low Cut은 20Hz에서 1000Hz 사이여야 합니다.");
+    const validationError = validateSettings();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
-    if (highCutHz < 1000 || highCutHz > 22000) {
-      setError("High Cut은 1000Hz에서 22000Hz 사이여야 합니다.");
+    const formData = buildDetectionFormData();
+    if (!formData) {
       return;
     }
-
-    if (lowCutHz >= highCutHz) {
-      setError("Low Cut 값은 High Cut 값보다 작아야 합니다.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("low_cut_hz", String(lowCutHz));
-    formData.append("high_cut_hz", String(highCutHz));
 
     try {
-      setProcessing(true);
-      const response = await fetch(`${API_BASE_URL}/api/audio/low-high-cut`, {
+      setDetecting(true);
+      const response = await fetch(`${API_BASE_URL}/api/audio/detect-silence`, {
         method: "POST",
         body: formData,
       });
@@ -173,10 +238,61 @@ export default function LowHighCutPage() {
         throw new Error(await parseError(response));
       }
 
-      const data = (await response.json()) as ProcessResponse;
-      setProcessed(data);
+      const data = (await response.json()) as DetectSilenceResponse;
+      setSilenceData(data);
+      if (data.silence_regions.length === 0) {
+        setInfo("No silence regions detected.");
+      }
     } catch (fetchError) {
-      setError(fetchError instanceof Error ? fetchError.message : "필터 적용에 실패했습니다.");
+      setError(fetchError instanceof Error ? fetchError.message : "무음 탐지에 실패했습니다.");
+    } finally {
+      setDetecting(false);
+    }
+  };
+
+  const handleApplyTrim = async () => {
+    setError("");
+    setInfo("");
+
+    if (!file) {
+      setError("먼저 WAV 파일을 업로드해 주세요.");
+      return;
+    }
+
+    const validationError = validateSettings();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const formData = buildDetectionFormData();
+    if (!formData) {
+      return;
+    }
+    formData.append("mode", mode);
+
+    try {
+      setProcessing(true);
+      const response = await fetch(`${API_BASE_URL}/api/audio/trim-silence`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(await parseError(response));
+      }
+
+      const data = (await response.json()) as TrimResponse;
+      setTrimResult(data);
+      setSilenceData({
+        duration: data.original_duration,
+        silence_regions: data.silence_regions,
+      });
+      if (data.silence_regions.length === 0) {
+        setInfo("No silence regions detected. 원본과 동일한 파일이 생성되었습니다.");
+      }
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError.message : "트림 적용에 실패했습니다.");
     } finally {
       setProcessing(false);
     }
@@ -198,7 +314,7 @@ export default function LowHighCutPage() {
       const objectUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = objectUrl;
-      link.download = `low-high-cut-${file?.name ?? "processed.wav"}`;
+      link.download = `trimmed-${file?.name ?? "processed.wav"}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -224,15 +340,15 @@ export default function LowHighCutPage() {
                 Audio Test Tool
               </p>
               <h1 className="mt-3 text-3xl font-semibold text-white md:text-5xl">
-                Low / High Cut Tester
+                Silence Trim Tester
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 md:text-base">
-                LLM 없이 WAV 파일을 업로드하고 현재 상태를 분석한 뒤, Low Cut / High Cut
-                필터를 적용해 Before / After 결과를 비교하는 기술 검증용 페이지입니다.
+                WAV loop 파일의 앞/뒤 또는 내부 무음 구간을 탐지하고, 트림 전후 결과를
+                비교하는 기술 검증용 페이지입니다.
               </p>
             </div>
             <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm text-cyan-100">
-              FastAPI + Next.js + scipy.signal
+              FastAPI + Next.js + numpy / soundfile
             </div>
           </div>
         </section>
@@ -241,6 +357,12 @@ export default function LowHighCutPage() {
           <div className="flex items-start gap-3 rounded-3xl border border-rose-400/30 bg-rose-500/10 p-4 text-rose-100">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <p className="text-sm leading-6">{error}</p>
+          </div>
+        ) : null}
+
+        {info ? (
+          <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm text-cyan-50">
+            {info}
           </div>
         ) : null}
 
@@ -313,7 +435,7 @@ export default function LowHighCutPage() {
                 <h2 className="text-lg font-medium">Preview</h2>
               </div>
               <div className="rounded-[24px] border border-white/8 bg-slate-950/80 p-5">
-                <div className="mb-5 flex h-36 items-end gap-2 overflow-hidden rounded-[20px] border border-white/6 bg-[linear-gradient(180deg,rgba(8,15,33,0.65),rgba(2,6,23,0.95))] px-4 py-4">
+                <div className="relative mb-5 flex h-36 items-end gap-2 overflow-hidden rounded-[20px] border border-white/6 bg-[linear-gradient(180deg,rgba(8,15,33,0.65),rgba(2,6,23,0.95))] px-4 py-4">
                   {waveformBars.map((bar) => (
                     <div
                       key={bar.id}
@@ -321,6 +443,21 @@ export default function LowHighCutPage() {
                       style={{ height: `${bar.height}%` }}
                     />
                   ))}
+                  {silenceData?.duration
+                    ? silenceData.silence_regions.map((region, index) => (
+                        <div
+                          key={`${region.start}-${region.end}-${index}`}
+                          className="absolute top-0 bottom-0 rounded-xl border border-amber-300/25 bg-amber-300/16"
+                          style={{
+                            left: `${(region.start / silenceData.duration) * 100}%`,
+                            width: `${Math.max(
+                              1.5,
+                              ((region.end - region.start) / silenceData.duration) * 100,
+                            )}%`,
+                          }}
+                        />
+                      ))
+                    : null}
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div className="rounded-2xl border border-white/8 bg-slate-900/70 p-4">
@@ -336,62 +473,57 @@ export default function LowHighCutPage() {
             </div>
 
             <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 backdrop-blur">
-              <h2 className="text-lg font-medium text-white">Before / After Metrics</h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div className="rounded-[24px] border border-white/8 bg-slate-950/70 p-4">
-                  <p className="text-sm text-slate-400">Before</p>
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Peak</span>
-                      <span className="text-sm font-medium text-white">
-                        {processed
-                          ? formatDbfs(processed.analysis_before.peak_dbfs)
-                          : analysis
-                            ? formatDbfs(analysis.peak_dbfs)
-                            : "-"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">RMS</span>
-                      <span className="text-sm font-medium text-white">
-                        {processed
-                          ? formatDbfs(processed.analysis_before.rms_dbfs)
-                          : analysis
-                            ? formatDbfs(analysis.rms_dbfs)
-                            : "-"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-[24px] border border-cyan-300/20 bg-cyan-300/8 p-4">
-                  <p className="text-sm text-cyan-100">After</p>
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-cyan-100/70">Peak</span>
-                      <span className="text-sm font-medium text-white">
-                        {processed ? formatDbfs(processed.analysis_after.peak_dbfs) : "-"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-cyan-100/70">RMS</span>
-                      <span className="text-sm font-medium text-white">
-                        {processed ? formatDbfs(processed.analysis_after.rms_dbfs) : "-"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <div className="mb-4 flex items-center gap-2 text-cyan-100">
+                <ScissorsLineDashed className="h-5 w-5" />
+                <h2 className="text-lg font-medium">Detected Silence Regions</h2>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/8 bg-slate-950/70 p-4 text-sm text-slate-300">
-                {processed ? (
-                  <p>
-                    Applied: Low Cut {processed.applied.low_cut_hz}Hz / High Cut{" "}
-                    {processed.applied.high_cut_hz}Hz
+              {detecting ? (
+                <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-slate-950/70 p-4 text-sm text-slate-300">
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  무음 구간을 분석하는 중입니다.
+                </div>
+              ) : silenceData?.silence_regions.length ? (
+                <div className="space-y-3">
+                  {silenceData.silence_regions.map((region, index) => (
+                    <div
+                      key={`${region.start}-${region.end}-${index}`}
+                      className="rounded-2xl border border-white/8 bg-slate-950/70 p-4"
+                    >
+                      <p className="text-sm font-medium text-white">
+                        {index + 1}. {region.start.toFixed(2)}s ~ {region.end.toFixed(2)}s
+                      </p>
+                      <p className="mt-2 text-sm text-slate-400">
+                        {formatMilliseconds(region.duration)} / {region.type}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-white/8 bg-slate-950/70 p-4 text-sm leading-6 text-slate-400">
+                  Detect Silence를 누르면 탐지된 시작/중간/끝 무음 구간이 여기에 표시됩니다.
+                </p>
+              )}
+
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-white/8 bg-slate-950/70 p-4">
+                  <p className="text-sm text-slate-400">Original Duration</p>
+                  <p className="mt-2 text-lg font-medium text-white">
+                    {trimResult ? formatSeconds(trimResult.original_duration) : "-"}
                   </p>
-                ) : (
-                  <p>필터 적용 후 Before / After 변화가 이 영역에 표시됩니다.</p>
-                )}
+                </div>
+                <div className="rounded-2xl border border-white/8 bg-slate-950/70 p-4">
+                  <p className="text-sm text-slate-400">Processed Duration</p>
+                  <p className="mt-2 text-lg font-medium text-white">
+                    {trimResult ? formatSeconds(trimResult.processed_duration) : "-"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 p-4">
+                  <p className="text-sm text-cyan-100/70">Removed Duration</p>
+                  <p className="mt-2 text-lg font-medium text-white">
+                    {trimResult ? formatSeconds(trimResult.removed_duration) : "-"}
+                  </p>
+                </div>
               </div>
             </div>
           </section>
@@ -400,50 +532,102 @@ export default function LowHighCutPage() {
             <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 backdrop-blur">
               <div className="mb-4 flex items-center gap-2 text-cyan-100">
                 <SlidersHorizontal className="h-5 w-5" />
-                <h2 className="text-lg font-medium">Filter Settings</h2>
+                <h2 className="text-lg font-medium">Silence Detection</h2>
               </div>
-
               <div className="space-y-4">
                 <label className="block rounded-[24px] border border-white/8 bg-slate-950/70 p-4">
-                  <span className="text-sm text-slate-300">Low Cut Frequency</span>
+                  <span className="text-sm text-slate-300">Silence Threshold</span>
                   <input
                     type="number"
-                    min={20}
-                    max={1000}
-                    value={lowCutHz}
-                    onChange={(event) => setLowCutHz(Number(event.target.value))}
+                    min={-80}
+                    max={-20}
+                    value={thresholdDb}
+                    onChange={(event) => setThresholdDb(Number(event.target.value))}
                     className="mt-3 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-cyan-300"
                   />
-                  <p className="mt-2 text-xs text-slate-500">20Hz to 1000Hz</p>
+                  <p className="mt-2 text-xs text-slate-500">-80 dBFS to -20 dBFS</p>
                 </label>
 
                 <label className="block rounded-[24px] border border-white/8 bg-slate-950/70 p-4">
-                  <span className="text-sm text-slate-300">High Cut Frequency</span>
+                  <span className="text-sm text-slate-300">Min Silence Duration</span>
                   <input
                     type="number"
-                    min={1000}
-                    max={22000}
-                    value={highCutHz}
-                    onChange={(event) => setHighCutHz(Number(event.target.value))}
+                    min={50}
+                    max={2000}
+                    value={minSilenceMs}
+                    onChange={(event) => setMinSilenceMs(Number(event.target.value))}
                     className="mt-3 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-cyan-300"
                   />
-                  <p className="mt-2 text-xs text-slate-500">1000Hz to 22000Hz</p>
+                  <p className="mt-2 text-xs text-slate-500">50ms to 2000ms</p>
+                </label>
+
+                <label className="block rounded-[24px] border border-white/8 bg-slate-950/70 p-4">
+                  <span className="text-sm text-slate-300">Padding</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={500}
+                    value={paddingMs}
+                    onChange={(event) => setPaddingMs(Number(event.target.value))}
+                    className="mt-3 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-cyan-300"
+                  />
+                  <p className="mt-2 text-xs text-slate-500">0ms to 500ms</p>
                 </label>
               </div>
 
               <button
                 type="button"
-                onClick={handleApplyFilter}
-                disabled={!file || analyzing || processing}
+                onClick={handleDetectSilence}
+                disabled={!file || analyzing || detecting || processing}
+                className="mt-5 inline-flex w-full items-center justify-center rounded-2xl border border-cyan-200/25 bg-slate-900/80 px-4 py-3 font-medium text-cyan-100 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
+              >
+                {detecting ? (
+                  <>
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    Detecting...
+                  </>
+                ) : (
+                  <>
+                    <Search className="mr-2 h-4 w-4" />
+                    Detect Silence
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 backdrop-blur">
+              <h2 className="text-lg font-medium text-white">Trim Mode</h2>
+              <div className="mt-4 space-y-3">
+                {trimModes.map((trimMode) => (
+                  <button
+                    key={trimMode.value}
+                    type="button"
+                    onClick={() => setMode(trimMode.value)}
+                    className={`w-full rounded-2xl border p-4 text-left transition ${
+                      mode === trimMode.value
+                        ? "border-cyan-300/40 bg-cyan-300/10"
+                        : "border-white/8 bg-slate-950/70"
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-white">{trimMode.title}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">{trimMode.detail}</p>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleApplyTrim}
+                disabled={!file || analyzing || detecting || processing}
                 className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-cyan-300 px-4 py-3 font-medium text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
               >
                 {processing ? (
                   <>
                     <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                    Applying Filter...
+                    Applying Trim...
                   </>
                 ) : (
-                  "Apply Filter"
+                  "Apply Trim"
                 )}
               </button>
             </div>
@@ -466,7 +650,7 @@ export default function LowHighCutPage() {
                 {downloading ? "Downloading..." : "Download Processed WAV"}
               </button>
               <p className="mt-3 text-sm leading-6 text-slate-400">
-                필터 적용이 끝나면 처리된 WAV 파일을 바로 내려받을 수 있습니다.
+                트림 적용이 끝나면 처리된 WAV 파일을 바로 내려받을 수 있습니다.
               </p>
             </div>
           </section>
