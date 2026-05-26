@@ -22,6 +22,12 @@ export default function HomePage() {
           >
             Open Silence Trim Tester
           </Link>
+          <Link
+            href="/tools/daw-workspace"
+            className="inline-flex rounded-2xl border border-fuchsia-200/30 bg-fuchsia-500/10 px-5 py-3 font-medium text-fuchsia-100 transition hover:bg-fuchsia-500/15"
+          >
+            Open DAW Workspace Mockup
+          </Link>
         </div>
       </div>
     </main>
