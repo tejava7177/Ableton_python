@@ -28,6 +28,12 @@ export default function HomePage() {
           >
             Open DAW Workspace Mockup
           </Link>
+          <Link
+            href="/tools/upload-waveforms"
+            className="inline-flex rounded-2xl border border-emerald-200/30 bg-emerald-500/10 px-5 py-3 font-medium text-emerald-100 transition hover:bg-emerald-500/15"
+          >
+            Open Upload Waveform Test
+          </Link>
         </div>
       </div>
     </main>

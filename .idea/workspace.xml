@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ab7991b8-9af1-4c55-a9b7-3f72bff0b342" name="Changes" comment="기본세팅" />
+    <list default="true" id="ab7991b8-9af1-4c55-a9b7-3f72bff0b342" name="Changes" comment="기본세팅">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VoltaWebPage/frontend/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/frontend/next-env.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/page.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -41,22 +45,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.main.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "/Users/simjuheun/Desktop/myProject/Ableton_python",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Users/simjuheun/Desktop/myProject/Ableton_python/VoltaWebPage/frontend/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/simjuheun/Desktop/myProject/Ableton_python&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/simjuheun/Desktop/myProject/Ableton_python/VoltaWebPage/frontend/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Ableton_python" />
@@ -108,6 +112,8 @@
       <workItem from="1779690388316" duration="539000" />
       <workItem from="1779690929724" duration="680000" />
       <workItem from="1779695198233" duration="1219000" />
+      <workItem from="1779755183304" duration="2292000" />
+      <workItem from="1779942785487" duration="1365000" />
     </task>
     <task id="LOCAL-00001" summary="기본세팅">
       <option name="closed" value="true" />
