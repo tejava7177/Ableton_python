@@ -5,9 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ab7991b8-9af1-4c55-a9b7-3f72bff0b342" name="Changes" comment="기본세팅">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VoltaWebPage/frontend/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/frontend/next-env.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/tools/upload-waveforms/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/VoltaWebPage/frontend/src/app/tools/upload-waveforms/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -113,7 +111,7 @@
       <workItem from="1779690929724" duration="680000" />
       <workItem from="1779695198233" duration="1219000" />
       <workItem from="1779755183304" duration="2292000" />
-      <workItem from="1779942785487" duration="1365000" />
+      <workItem from="1779942785487" duration="1787000" />
     </task>
     <task id="LOCAL-00001" summary="기본세팅">
       <option name="closed" value="true" />

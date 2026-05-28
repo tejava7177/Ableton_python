@@ -24,6 +24,17 @@ type UploadTrack = {
   colorClass: string;
 };
 
+type ParsedWavHeader = {
+  audioFormat: number;
+  channelCount: number;
+  sampleRate: number;
+  bitsPerSample: number;
+  blockAlign: number;
+  dataOffset: number;
+  dataSize: number;
+  duration: number;
+};
+
 const trackColors = [
   "bg-purple-500",
   "bg-fuchsia-500",
@@ -72,30 +83,180 @@ function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-async function readApproximateWaveform(file: File, bars = 160) {
-  const sampleBytes = Math.min(file.size, 256 * 1024);
-  const buffer = await file.slice(0, sampleBytes).arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-
-  if (bytes.length === 0) {
-    return Array.from({ length: bars }, () => 8);
+function readAscii(view: DataView, start: number, length: number) {
+  let result = "";
+  for (let i = 0; i < length; i += 1) {
+    result += String.fromCharCode(view.getUint8(start + i));
   }
-
-  const blockSize = Math.max(1, Math.floor(bytes.length / bars));
-  return Array.from({ length: bars }, (_, index) => {
-    const start = index * blockSize;
-    const end = Math.min(bytes.length, start + blockSize);
-    let peak = 0;
-
-    for (let i = start; i < end; i += 1) {
-      peak = Math.max(peak, Math.abs(bytes[i] - 128) / 128);
-    }
-
-    return Math.max(6, Math.round(peak * 100));
-  });
+  return result;
 }
 
-async function readAudioDuration(file: File) {
+async function parseWavHeader(file: File): Promise<ParsedWavHeader | null> {
+  const headerBytes = Math.min(file.size, 128 * 1024);
+  const buffer = await file.slice(0, headerBytes).arrayBuffer();
+  const view = new DataView(buffer);
+
+  if (view.byteLength < 44) {
+    return null;
+  }
+
+  if (readAscii(view, 0, 4) !== "RIFF" || readAscii(view, 8, 4) !== "WAVE") {
+    return null;
+  }
+
+  let offset = 12;
+  let audioFormat = 1;
+  let channelCount = 1;
+  let sampleRate = 44100;
+  let bitsPerSample = 16;
+  let blockAlign = 2;
+  let dataOffset = -1;
+  let dataSize = 0;
+
+  while (offset + 8 <= view.byteLength) {
+    const chunkId = readAscii(view, offset, 4);
+    const chunkSize = view.getUint32(offset + 4, true);
+    const chunkDataOffset = offset + 8;
+
+    if (chunkId === "fmt " && chunkDataOffset + 16 <= view.byteLength) {
+      audioFormat = view.getUint16(chunkDataOffset, true);
+      channelCount = view.getUint16(chunkDataOffset + 2, true);
+      sampleRate = view.getUint32(chunkDataOffset + 4, true);
+      blockAlign = view.getUint16(chunkDataOffset + 12, true);
+      bitsPerSample = view.getUint16(chunkDataOffset + 14, true);
+    } else if (chunkId === "data") {
+      dataOffset = chunkDataOffset;
+      dataSize = chunkSize;
+      break;
+    }
+
+    offset = chunkDataOffset + chunkSize + (chunkSize % 2);
+  }
+
+  if (dataOffset < 0 || dataSize <= 0 || blockAlign <= 0 || sampleRate <= 0) {
+    return null;
+  }
+
+  const duration = dataSize / blockAlign / sampleRate;
+  return {
+    audioFormat,
+    channelCount,
+    sampleRate,
+    bitsPerSample,
+    blockAlign,
+    dataOffset,
+    dataSize,
+    duration,
+  };
+}
+
+function readSampleAmplitude(
+  view: DataView,
+  byteOffset: number,
+  header: ParsedWavHeader,
+) {
+  const bytesPerChannel = Math.max(1, header.bitsPerSample / 8);
+  const availableChannels = Math.max(1, header.channelCount);
+  let sum = 0;
+
+  for (let channel = 0; channel < availableChannels; channel += 1) {
+    const sampleOffset = byteOffset + channel * bytesPerChannel;
+    let normalized = 0;
+
+    if (header.audioFormat === 3 && bytesPerChannel === 4) {
+      normalized = Math.abs(view.getFloat32(sampleOffset, true));
+    } else if (bytesPerChannel === 1) {
+      normalized = Math.abs((view.getUint8(sampleOffset) - 128) / 128);
+    } else if (bytesPerChannel === 2) {
+      normalized = Math.abs(view.getInt16(sampleOffset, true) / 32768);
+    } else if (bytesPerChannel === 3) {
+      const b0 = view.getUint8(sampleOffset);
+      const b1 = view.getUint8(sampleOffset + 1);
+      const b2 = view.getUint8(sampleOffset + 2);
+      let value = b0 | (b1 << 8) | (b2 << 16);
+      if (value & 0x800000) {
+        value |= ~0xffffff;
+      }
+      normalized = Math.abs(value / 8388608);
+    } else if (bytesPerChannel === 4) {
+      normalized = Math.abs(view.getInt32(sampleOffset, true) / 2147483648);
+    }
+
+    sum += normalized;
+  }
+
+  return Math.min(1, sum / availableChannels);
+}
+
+async function readApproximateWaveform(
+  file: File,
+  header: ParsedWavHeader | null,
+  bars = 160,
+) {
+  if (!header) {
+    const fallbackBytes = new Uint8Array(await file.slice(0, Math.min(file.size, 256 * 1024)).arrayBuffer());
+    if (fallbackBytes.length === 0) {
+      return Array.from({ length: bars }, () => 8);
+    }
+
+    const blockSize = Math.max(1, Math.floor(fallbackBytes.length / bars));
+    return Array.from({ length: bars }, (_, index) => {
+      const start = index * blockSize;
+      const end = Math.min(fallbackBytes.length, start + blockSize);
+      let peak = 0;
+
+      for (let i = start; i < end; i += 1) {
+        peak = Math.max(peak, Math.abs(fallbackBytes[i] - 128) / 128);
+      }
+
+      return Math.max(6, Math.round(peak * 100));
+    });
+  }
+
+  const windowCount = 20;
+  const barsPerWindow = Math.ceil(bars / windowCount);
+  const windows = Array.from({ length: windowCount }, (_, index) => {
+    const relativeStart = (header.dataSize * index) / windowCount;
+    const absoluteStart = header.dataOffset + Math.floor(relativeStart);
+    const windowSize = Math.min(
+      16 * 1024,
+      Math.max(header.blockAlign * 64, Math.floor(header.dataSize / windowCount)),
+    );
+    const absoluteEnd = Math.min(file.size, absoluteStart + windowSize);
+    return { absoluteStart, absoluteEnd };
+  });
+
+  const buffers = await Promise.all(
+    windows.map((windowInfo) => file.slice(windowInfo.absoluteStart, windowInfo.absoluteEnd).arrayBuffer()),
+  );
+
+  const waveform = buffers.flatMap((buffer) => {
+    const view = new DataView(buffer);
+    const frameCount = Math.max(1, Math.floor(view.byteLength / header.blockAlign));
+    const framesPerBar = Math.max(1, Math.floor(frameCount / barsPerWindow));
+
+    return Array.from({ length: barsPerWindow }, (_, index) => {
+      const frameStart = index * framesPerBar;
+      const frameEnd = Math.min(frameCount, frameStart + framesPerBar);
+      let peak = 0;
+
+      for (let frameIndex = frameStart; frameIndex < frameEnd; frameIndex += 1) {
+        const byteOffset = frameIndex * header.blockAlign;
+        peak = Math.max(peak, readSampleAmplitude(view, byteOffset, header));
+      }
+
+      return Math.max(6, Math.round(peak * 100));
+    });
+  });
+
+  return waveform.slice(0, bars);
+}
+
+async function readAudioDuration(file: File, header: ParsedWavHeader | null) {
+  if (header) {
+    return header.duration;
+  }
+
   return await new Promise<number>((resolve, reject) => {
     const objectUrl = window.URL.createObjectURL(file);
     const audio = new Audio();
@@ -147,9 +308,11 @@ function UploadProgressPill({
 function TrackWaveform({
   track,
   active,
+  maxDuration,
 }: {
   track: UploadTrack;
   active: boolean;
+  maxDuration: number;
 }) {
   const waveform = useMemo(
     () =>
@@ -165,12 +328,17 @@ function TrackWaveform({
         active ? "bg-purple-500/5" : "bg-zinc-950/20"
       }`}
     >
-      <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center gap-[2px] px-3">
+      <div
+        className="absolute left-3 top-1/2 flex h-10 -translate-y-1/2 items-center gap-[2px] overflow-hidden rounded-md border border-zinc-800/70 bg-zinc-950/90 px-2"
+        style={{
+          width: `${Math.max(10, Math.min(100, ((track.duration ?? maxDuration) / maxDuration) * 100 - 4))}%`,
+        }}
+      >
         {waveform.map((height, index) => (
           <div
             key={`${track.id}-${index}`}
             className={`w-1 rounded-full ${active ? track.colorClass : "bg-zinc-600/70"}`}
-            style={{ height: `${height}%`, opacity: active ? 0.95 : 0.45 }}
+            style={{ height: `${height}%`, opacity: active ? 0.95 : 0.55 }}
           />
         ))}
       </div>
@@ -192,6 +360,10 @@ export default function UploadWaveformTestPage() {
 
   const selectedTrack =
     tracks.find((track) => track.id === selectedTrackId) ?? tracks[0] ?? null;
+  const maxDuration = Math.max(
+    30,
+    ...tracks.map((track) => track.duration ?? 0),
+  );
 
   useEffect(() => {
     if (activeTrackIdRef.current) {
@@ -229,9 +401,10 @@ export default function UploadWaveformTestPage() {
           ),
         );
 
+        const header = await parseWavHeader(nextTrack.file);
         const [duration, waveform] = await Promise.all([
-          readAudioDuration(nextTrack.file),
-          readApproximateWaveform(nextTrack.file),
+          readAudioDuration(nextTrack.file, header),
+          readApproximateWaveform(nextTrack.file, header),
         ]);
 
         if (generation !== generationRef.current) {
@@ -464,6 +637,7 @@ export default function UploadWaveformTestPage() {
                     key={track.id}
                     track={track}
                     active={selectedTrack?.id === track.id}
+                    maxDuration={maxDuration}
                   />
                 ))
               )}
