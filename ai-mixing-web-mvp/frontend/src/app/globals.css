@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-ink text-white antialiased;
+}
+
+input,
+button {
+  @apply outline-none;
+}
+

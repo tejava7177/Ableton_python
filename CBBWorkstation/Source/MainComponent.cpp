@@ -27,7 +27,7 @@ MainComponent::MainComponent()
     addAndMakeVisible(grooveControlComponent);
     addAndMakeVisible(transportComponent);
 
-    setSize(960, 640);
+    setSize(1120, 840);
 }
 
 void MainComponent::paint(juce::Graphics& g)
@@ -44,26 +44,25 @@ void MainComponent::paint(juce::Graphics& g)
 
 void MainComponent::resized()
 {
-    auto area = getLocalBounds().reduced(40);
+    auto area = getLocalBounds().reduced(32);
 
-    auto header = area.removeFromTop(88);
-    titleLabel.setBounds(header.removeFromTop(38));
-    subtitleLabel.setBounds(header.removeFromTop(24));
+    auto header = area.removeFromTop(76);
+    titleLabel.setBounds(header.removeFromTop(34));
+    subtitleLabel.setBounds(header.removeFromTop(22));
 
-    auto styleArea = area.removeFromTop(72);
+    auto styleArea = area.removeFromTop(60);
     styleLabel.setBounds(styleArea.removeFromLeft(160));
-    styleSelector.setBounds(styleArea.removeFromLeft(220).reduced(0, 12));
+    styleSelector.setBounds(styleArea.removeFromLeft(240).reduced(0, 8));
 
     area.removeFromTop(12);
-    chordInputComponent.setBounds(area.removeFromTop(120));
+    chordInputComponent.setBounds(area.removeFromTop(104));
 
-    area.removeFromTop(16);
-    auto middleRow = area.removeFromTop(180);
+    area.removeFromTop(12);
+    auto middleRow = area.removeFromTop(240);
     sectionPanelComponent.setBounds(middleRow.removeFromLeft(middleRow.proportionOfWidth(0.48f)));
     middleRow.removeFromLeft(16);
     grooveControlComponent.setBounds(middleRow);
 
-    area.removeFromTop(16);
-    transportComponent.setBounds(area.removeFromTop(120));
+    area.removeFromTop(12);
+    transportComponent.setBounds(area.removeFromTop(130));
 }
-

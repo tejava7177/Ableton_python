@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+numpy
+soundfile
+scipy
+pydantic
+python-multipart
+
