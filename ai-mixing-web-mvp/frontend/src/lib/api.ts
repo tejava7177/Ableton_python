@@ -1,6 +1,7 @@
 import type {
   ActionSession,
   AnalysisSession,
+  EqBand,
   ProjectDetail,
   ProjectSession,
   TrackSession,
@@ -59,6 +60,18 @@ export async function applyLowHighCut(
   params: { low_cut_hz: number; high_cut_hz: number },
 ): Promise<ActionSession> {
   const response = await fetch(`${API_BASE}/api/tracks/${trackId}/actions/low-high-cut`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  return parseJson<ActionSession>(response);
+}
+
+export async function applyChannelEq(
+  trackId: string,
+  params: { low_cut_hz: number; high_cut_hz: number; bands: EqBand[] },
+): Promise<ActionSession> {
+  const response = await fetch(`${API_BASE}/api/tracks/${trackId}/actions/channel-eq`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),

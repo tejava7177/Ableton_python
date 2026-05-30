@@ -8,7 +8,7 @@ import { TrackList } from "@/components/TrackList";
 import { UploadPanel } from "@/components/UploadPanel";
 import {
   analyzeTrack,
-  applyLowHighCut,
+  applyChannelEq,
   createProject,
   getProject,
   updateActionStatus,
@@ -17,6 +17,7 @@ import {
 import type {
   ActionSession,
   AnalysisSession,
+  EqBand,
   ProjectDetail,
   TrackSession,
 } from "@/types/session";
@@ -42,6 +43,18 @@ export default function HomePage() {
   async function refreshProject(projectId: string) {
     const detail = await getProject(projectId);
     setProject(detail);
+
+    const nextAnalysisMap: Record<string, AnalysisSession> = {};
+    for (const analysis of detail.analyses) {
+      nextAnalysisMap[analysis.track_id] = analysis;
+    }
+    setAnalysisMap(nextAnalysisMap);
+
+    const nextActionMap: Record<string, ActionSession> = {};
+    for (const action of detail.actions) {
+      nextActionMap[action.track_id] = action;
+    }
+    setActionMap(nextActionMap);
   }
 
   async function handleCreateProject() {
@@ -91,7 +104,11 @@ export default function HomePage() {
     }
   }
 
-  async function handleApplyLowHighCut(params: { low_cut_hz: number; high_cut_hz: number }) {
+  async function handleApplyChannelEq(params: {
+    low_cut_hz: number;
+    high_cut_hz: number;
+    bands: EqBand[];
+  }) {
     if (!selectedTrackId) {
       setMessage("처리할 트랙을 먼저 선택하세요.");
       return;
@@ -99,7 +116,7 @@ export default function HomePage() {
 
     try {
       setIsBusy(true);
-      const action = await applyLowHighCut(selectedTrackId, params);
+      const action = await applyChannelEq(selectedTrackId, params);
       setActionMap((prev) => ({ ...prev, [selectedTrackId]: action }));
       await refreshProject(project!.project_id);
       setMessage(`처리 완료: ${action.action_id}`);
@@ -165,8 +182,9 @@ export default function HomePage() {
           />
           <AnalysisPanel
             analysis={selectedAnalysis}
+            action={selectedAction}
             selectedTrackId={selectedTrackId}
-            onApply={handleApplyLowHighCut}
+            onApply={handleApplyChannelEq}
             isBusy={isBusy}
           />
         </div>

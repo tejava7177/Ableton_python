@@ -1,3 +1,10 @@
+export type EqBand = {
+  frequency_hz: number;
+  gain_db: number;
+  q: number;
+  enabled: boolean;
+};
+
 export type ProjectSession = {
   project_id: string;
   name: string;
@@ -37,6 +44,7 @@ export type ActionSession = {
   params: {
     low_cut_hz?: number;
     high_cut_hz?: number;
+    bands?: EqBand[];
   };
   processed_file_url: string | null;
 };
@@ -46,4 +54,3 @@ export type ProjectDetail = ProjectSession & {
   analyses: AnalysisSession[];
   actions: ActionSession[];
 };
-
