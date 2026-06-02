@@ -9,6 +9,11 @@ ChordInputComponent::ChordInputComponent()
     chordEditor.setText("C - G - Am - F", juce::dontSendNotification);
     chordEditor.setFont(juce::FontOptions(20.0f));
     chordEditor.setMultiLine(false);
+    chordEditor.onTextChange = [this]
+    {
+        if (onChordChange != nullptr)
+            onChordChange();
+    };
     addAndMakeVisible(chordEditor);
 }
 
@@ -31,3 +36,7 @@ juce::String ChordInputComponent::getChordText() const
     return chordEditor.getText();
 }
 
+void ChordInputComponent::setOnChordChange(std::function<void()> callback)
+{
+    onChordChange = std::move(callback);
+}

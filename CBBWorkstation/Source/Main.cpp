@@ -2,12 +2,12 @@
 
 #include "MainComponent.h"
 
-class CBBWorkstationApplication final : public juce::JUCEApplication
+class ChordFlowWorkstationApplication final : public juce::JUCEApplication
 {
 public:
-    CBBWorkstationApplication() = default;
+    ChordFlowWorkstationApplication() = default;
 
-    const juce::String getApplicationName() override { return "C.B.B Workstation"; }
+    const juce::String getApplicationName() override { return "ChordFlow Workstation"; }
     const juce::String getApplicationVersion() override { return "0.1.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
 
@@ -55,4 +55,4 @@ private:
     std::unique_ptr<MainWindow> mainWindow;
 };
 
-START_JUCE_APPLICATION(CBBWorkstationApplication)
+START_JUCE_APPLICATION(ChordFlowWorkstationApplication)

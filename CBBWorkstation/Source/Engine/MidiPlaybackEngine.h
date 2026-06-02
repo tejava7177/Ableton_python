@@ -9,19 +9,36 @@ class MidiPlaybackEngine
 public:
     MidiPlaybackEngine() = default;
 
-    void play()
+    void play(const juce::String& playbackSummary, bool shouldLoop)
     {
-        // TODO: Connect generated MIDI events to a playback clock and output device.
+        playing = true;
+        loopEnabled = shouldLoop;
+        currentSummary = playbackSummary;
     }
 
     void stop()
     {
-        // TODO: Stop playback and reset transport state.
+        playing = false;
     }
 
     [[nodiscard]] bool isPlaying() const noexcept
     {
-        return false;
+        return playing;
     }
+
+    [[nodiscard]] bool isLoopEnabled() const noexcept
+    {
+        return loopEnabled;
+    }
+
+    [[nodiscard]] juce::String getCurrentSummary() const
+    {
+        return currentSummary;
+    }
+
+private:
+    bool playing = false;
+    bool loopEnabled = false;
+    juce::String currentSummary;
 };
 } // namespace Engine

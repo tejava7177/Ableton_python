@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(CBBWorkstation VERSION 0.1.0 LANGUAGES C CXX)
+project(ChordFlowWorkstation VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,18 +20,18 @@ endif()
 if (NOT TARGET juce::juce_gui_extra)
     message(FATAL_ERROR
         "JUCE was not found.\n"
-        "Add JUCE as a subdirectory at CBBWorkstation/JUCE, configure CMake with -DJUCE_SOURCE_DIR=/path/to/JUCE,\n"
+        "Add JUCE as a subdirectory at ChordFlowWorkstation/JUCE, configure CMake with -DJUCE_SOURCE_DIR=/path/to/JUCE,\n"
         "or provide a JUCE package config with -DJUCE_DIR=/path/to/JUCEConfig.cmake parent.\n"
         "TODO: wire this project to the team's preferred JUCE dependency source once available."
     )
 endif()
 
-juce_add_gui_app(CBBWorkstation
-    PRODUCT_NAME "C.B.B Workstation"
-    COMPANY_NAME "CBB"
+juce_add_gui_app(ChordFlowWorkstation
+    PRODUCT_NAME "ChordFlow Workstation"
+    COMPANY_NAME "ChordFlow"
 )
 
-target_sources(CBBWorkstation
+target_sources(ChordFlowWorkstation
     PRIVATE
         Source/Main.cpp
         Source/MainComponent.cpp
@@ -41,18 +41,18 @@ target_sources(CBBWorkstation
         Source/UI/TransportComponent.cpp
 )
 
-target_include_directories(CBBWorkstation
+target_include_directories(ChordFlowWorkstation
     PRIVATE
         Source
 )
 
-target_compile_definitions(CBBWorkstation
+target_compile_definitions(ChordFlowWorkstation
     PRIVATE
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
 )
 
-target_link_libraries(CBBWorkstation
+target_link_libraries(ChordFlowWorkstation
     PRIVATE
         juce::juce_gui_extra
     PUBLIC

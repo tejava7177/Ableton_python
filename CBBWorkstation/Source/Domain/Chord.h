@@ -4,6 +4,8 @@
 
 struct Chord
 {
+    juce::String symbol;
     juce::String root;
     juce::String quality;
+    int midiRoot = 60;
 };

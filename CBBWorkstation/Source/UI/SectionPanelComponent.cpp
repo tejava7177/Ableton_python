@@ -8,11 +8,13 @@ SectionPanelComponent::SectionPanelComponent()
 
     for (auto* button : { &mainAButton, &fillButton, &endingButton })
     {
-        button->setClickingTogglesState(true);
         addAndMakeVisible(*button);
     }
 
     mainAButton.setToggleState(true, juce::dontSendNotification);
+    mainAButton.onClick = [this] { selectSection(SectionType::MainA); };
+    fillButton.onClick = [this] { selectSection(SectionType::Fill); };
+    endingButton.onClick = [this] { selectSection(SectionType::Ending); };
 }
 
 void SectionPanelComponent::paint(juce::Graphics& g)
@@ -35,3 +37,28 @@ void SectionPanelComponent::resized()
     endingButton.setBounds(area.removeFromTop(buttonHeight));
 }
 
+SectionType SectionPanelComponent::getSelectedSection() const noexcept
+{
+    if (fillButton.getToggleState())
+        return SectionType::Fill;
+
+    if (endingButton.getToggleState())
+        return SectionType::Ending;
+
+    return SectionType::MainA;
+}
+
+void SectionPanelComponent::setOnSectionChange(std::function<void(SectionType)> callback)
+{
+    onSectionChange = std::move(callback);
+}
+
+void SectionPanelComponent::selectSection(SectionType section)
+{
+    mainAButton.setToggleState(section == SectionType::MainA, juce::dontSendNotification);
+    fillButton.setToggleState(section == SectionType::Fill, juce::dontSendNotification);
+    endingButton.setToggleState(section == SectionType::Ending, juce::dontSendNotification);
+
+    if (onSectionChange != nullptr)
+        onSectionChange(section);
+}

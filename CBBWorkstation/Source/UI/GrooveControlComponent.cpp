@@ -15,6 +15,18 @@ GrooveControlComponent::GrooveControlComponent()
     configureSlider(swingSlider);
     addAndMakeVisible(energySlider);
     addAndMakeVisible(swingSlider);
+
+    energySlider.onValueChange = [this]
+    {
+        if (onGrooveChange != nullptr)
+            onGrooveChange();
+    };
+
+    swingSlider.onValueChange = [this]
+    {
+        if (onGrooveChange != nullptr)
+            onGrooveChange();
+    };
 }
 
 void GrooveControlComponent::paint(juce::Graphics& g)
@@ -47,3 +59,17 @@ void GrooveControlComponent::configureSlider(juce::Slider& slider)
     slider.setValue(0.5);
 }
 
+float GrooveControlComponent::getEnergy() const noexcept
+{
+    return static_cast<float>(energySlider.getValue());
+}
+
+float GrooveControlComponent::getSwing() const noexcept
+{
+    return static_cast<float>(swingSlider.getValue());
+}
+
+void GrooveControlComponent::setOnGrooveChange(std::function<void()> callback)
+{
+    onGrooveChange = std::move(callback);
+}

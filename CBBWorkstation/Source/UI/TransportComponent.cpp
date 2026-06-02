@@ -15,9 +15,19 @@ TransportComponent::TransportComponent()
 
     addAndMakeVisible(playButton);
     addAndMakeVisible(stopButton);
+    addAndMakeVisible(loopButton);
 
-    playButton.onClick = [this] { setStatusText("Playing"); };
-    stopButton.onClick = [this] { setStatusText("Stopped"); };
+    playButton.onClick = [this]
+    {
+        if (onPlay != nullptr)
+            onPlay();
+    };
+
+    stopButton.onClick = [this]
+    {
+        if (onStop != nullptr)
+            onStop();
+    };
 }
 
 void TransportComponent::paint(juce::Graphics& g)
@@ -36,13 +46,30 @@ void TransportComponent::resized()
     playButton.setBounds(controlRow.removeFromLeft(140));
     controlRow.removeFromLeft(12);
     stopButton.setBounds(controlRow.removeFromLeft(140));
+    controlRow.removeFromLeft(12);
+    loopButton.setBounds(controlRow.removeFromLeft(100));
     controlRow.removeFromLeft(18);
-    statusLabel.setBounds(controlRow.removeFromLeft(140));
+    statusLabel.setBounds(controlRow.removeFromLeft(320));
 }
 
 juce::String TransportComponent::getStatusText() const
 {
     return statusLabel.getText();
+}
+
+bool TransportComponent::isLoopEnabled() const noexcept
+{
+    return loopButton.getToggleState();
+}
+
+void TransportComponent::setOnPlay(std::function<void()> callback)
+{
+    onPlay = std::move(callback);
+}
+
+void TransportComponent::setOnStop(std::function<void()> callback)
+{
+    onStop = std::move(callback);
 }
 
 void TransportComponent::setStatusText(const juce::String& newStatus)
