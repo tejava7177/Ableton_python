@@ -12,6 +12,8 @@ from chordflow_analyzer.beat_tracker import track_beats
 from chordflow_analyzer.chart_builder import build_chart
 from chordflow_analyzer.chord_estimator import estimate_beat_chords
 from chordflow_analyzer.chroma_extractor import extract_chroma
+from chordflow_analyzer.enharmonic import normalize_chart_spelling
+from chordflow_analyzer.post_processor import build_practice_chart
 
 
 def parse_args() -> argparse.Namespace:
@@ -22,6 +24,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--time-signature", default="4/4", help="Time signature label for output metadata.")
     parser.add_argument("--beats-per-bar", type=int, default=4, help="Beats per bar for chart grouping.")
     parser.add_argument("--hop-length", type=int, default=512, help="Hop length used for chroma extraction.")
+    parser.add_argument(
+        "--chart-mode",
+        choices=("simple", "detailed"),
+        default="simple",
+        help="Practice chart output mode.",
+    )
+    parser.add_argument(
+        "--spelling",
+        choices=("flat", "sharp", "auto"),
+        default="auto",
+        help="Preferred chord spelling for output.",
+    )
     parser.add_argument(
         "--min-chord-duration-beats",
         type=int,
@@ -41,17 +55,17 @@ def main() -> None:
 
     y, sr = load_audio(input_path)
     tempo, beat_times = track_beats(y, sr)
-    chroma, frame_times = extract_chroma(y, sr, hop_length=args.hop_length)
+    chroma, frame_times, bass_chroma = extract_chroma(y, sr, hop_length=args.hop_length)
     beat_chords = estimate_beat_chords(
         beat_times=beat_times,
         chroma=chroma,
         frame_times=frame_times,
+        bass_chroma=bass_chroma,
         beats_per_bar=args.beats_per_bar,
-        min_chord_duration_beats=args.min_chord_duration_beats,
         debug=args.debug,
     )
 
-    chart = build_chart(
+    raw_chart = build_chart(
         title=input_path.stem,
         tempo=tempo,
         time_signature=args.time_signature,
@@ -59,6 +73,12 @@ def main() -> None:
         beat_times=beat_times,
         beat_chords=beat_chords,
     )
+    chart = build_practice_chart(
+        raw_chart=raw_chart,
+        chart_mode=args.chart_mode,
+        min_duration_beats=args.min_chord_duration_beats,
+    )
+    chart = normalize_chart_spelling(chart, preferred=args.spelling)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:

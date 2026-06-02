@@ -14,15 +14,21 @@ class BeatChord:
     time: float
     chord: str
     confidence: float
+    source: str = "beat_raw"
+    bass_root: str | None = None
 
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dictionary."""
-        return {
+        payload = {
             "beat": self.beat_in_bar,
             "time": round(self.time, 3),
             "chord": self.chord,
             "confidence": round(self.confidence, 3),
+            "source": self.source,
         }
+        if self.bass_root:
+            payload["bassRoot"] = self.bass_root
+        return payload
 
 
 @dataclass

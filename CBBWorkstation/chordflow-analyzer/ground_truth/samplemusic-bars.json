@@ -1,0 +1,21 @@
+{
+  "title": "samplemusic_ground_truth",
+  "bars": [
+    { "bar": 1, "chords": ["Eb"] },
+    { "bar": 2, "chords": ["Gm"] },
+    { "bar": 3, "chords": ["Db"] },
+    { "bar": 4, "chords": ["Dm", "G"] },
+    { "bar": 5, "chords": ["Cm"] },
+    { "bar": 6, "chords": ["Bb"] },
+    { "bar": 7, "chords": ["Fm"] },
+    { "bar": 8, "chords": ["Bb", "Ab", "Eb"] },
+    { "bar": 9, "chords": ["Eb"] },
+    { "bar": 10, "chords": ["Gm"] },
+    { "bar": 11, "chords": ["Db"] },
+    { "bar": 12, "chords": ["Dm", "G"] },
+    { "bar": 13, "chords": ["Cm"] },
+    { "bar": 14, "chords": ["Bb"] },
+    { "bar": 15, "chords": ["F"] },
+    { "bar": 16, "chords": ["Bb"] }
+  ]
+}

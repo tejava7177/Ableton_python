@@ -37,20 +37,12 @@ def build_chart(
         else:
             bar_end = float(beat_times[-1] + 0.5)
 
-        emitted_chords: list[BeatChord] = []
-        previous_label: str | None = None
-        for beat_chord in beat_chords[start_beat_index:end_beat_index]:
-            should_emit = beat_chord.beat_in_bar == 1 or beat_chord.chord != previous_label
-            if should_emit:
-                emitted_chords.append(beat_chord)
-            previous_label = beat_chord.chord
-
         bars.append(
             BarChord(
                 bar=bar_index + 1,
                 start=bar_start,
                 end=bar_end,
-                chords=emitted_chords,
+                chords=beat_chords[start_beat_index:end_beat_index],
             )
         )
 

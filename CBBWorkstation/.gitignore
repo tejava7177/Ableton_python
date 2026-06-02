@@ -25,3 +25,7 @@ JuceLibraryCode/
 __pycache__/
 *.pyc
 .venv/
+
+# Analyzer outputs
+chordflow-analyzer/output/*.json
+!chordflow-analyzer/output/.gitkeep
