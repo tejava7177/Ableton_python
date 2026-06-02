@@ -35,6 +35,7 @@ target_sources(ChordFlowWorkstation
     PRIVATE
         Source/Main.cpp
         Source/MainComponent.cpp
+        Source/UI/BackingSummaryComponent.cpp
         Source/UI/ChordInputComponent.cpp
         Source/UI/SectionPanelComponent.cpp
         Source/UI/GrooveControlComponent.cpp

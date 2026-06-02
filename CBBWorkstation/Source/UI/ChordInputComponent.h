@@ -17,6 +17,7 @@ public:
 
 private:
     juce::Label titleLabel;
+    juce::Label helperLabel;
     juce::TextEditor chordEditor;
     std::function<void()> onChordChange;
 

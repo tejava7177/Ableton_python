@@ -14,6 +14,7 @@ public:
 
     [[nodiscard]] juce::String getStatusText() const;
     [[nodiscard]] bool isLoopEnabled() const noexcept;
+    void setOnGenerate(std::function<void()> callback);
     void setOnPlay(std::function<void()> callback);
     void setOnStop(std::function<void()> callback);
     void setStatusText(const juce::String& newStatus);
@@ -21,9 +22,11 @@ public:
 private:
     juce::Label titleLabel;
     juce::Label statusLabel;
+    juce::TextButton generateButton { "Generate Backing" };
     juce::TextButton playButton { "Play" };
     juce::TextButton stopButton { "Stop" };
     juce::ToggleButton loopButton { "Loop" };
+    std::function<void()> onGenerate;
     std::function<void()> onPlay;
     std::function<void()> onStop;
 

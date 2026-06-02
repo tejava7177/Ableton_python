@@ -1,0 +1,27 @@
+# Build outputs
+/build/
+/cmake-build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+Makefile
+
+# JUCE generated artefacts
+JuceLibraryCode/
+*.jucer
+
+# macOS
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+.venv/

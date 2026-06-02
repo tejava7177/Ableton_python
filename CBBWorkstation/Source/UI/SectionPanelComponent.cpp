@@ -2,12 +2,14 @@
 
 SectionPanelComponent::SectionPanelComponent()
 {
-    titleLabel.setText("Song Sections", juce::dontSendNotification);
+    titleLabel.setText("Playback Section", juce::dontSendNotification);
     titleLabel.setJustificationType(juce::Justification::centredLeft);
+    titleLabel.setFont(juce::FontOptions(20.0f, juce::Font::bold));
     addAndMakeVisible(titleLabel);
 
     for (auto* button : { &mainAButton, &fillButton, &endingButton })
     {
+        button->setRadioGroupId(1);
         addAndMakeVisible(*button);
     }
 
@@ -19,22 +21,23 @@ SectionPanelComponent::SectionPanelComponent()
 
 void SectionPanelComponent::paint(juce::Graphics& g)
 {
-    g.setColour(juce::Colour::fromRGB(42, 48, 60));
-    g.fillRoundedRectangle(getLocalBounds().toFloat(), 14.0f);
+    g.setColour(juce::Colour::fromRGB(44, 51, 64));
+    g.fillRoundedRectangle(getLocalBounds().toFloat(), 18.0f);
 }
 
 void SectionPanelComponent::resized()
 {
-    auto area = getLocalBounds().reduced(20);
-    titleLabel.setBounds(area.removeFromTop(24));
+    auto area = getLocalBounds().reduced(24);
+    titleLabel.setBounds(area.removeFromTop(28));
     area.removeFromTop(16);
 
-    const auto buttonHeight = 40;
-    mainAButton.setBounds(area.removeFromTop(buttonHeight));
-    area.removeFromTop(10);
-    fillButton.setBounds(area.removeFromTop(buttonHeight));
-    area.removeFromTop(10);
-    endingButton.setBounds(area.removeFromTop(buttonHeight));
+    const auto buttonGap = 10;
+    const auto buttonWidth = (area.getWidth() - buttonGap * 2) / 3;
+    mainAButton.setBounds(area.removeFromLeft(buttonWidth));
+    area.removeFromLeft(buttonGap);
+    fillButton.setBounds(area.removeFromLeft(buttonWidth));
+    area.removeFromLeft(buttonGap);
+    endingButton.setBounds(area.removeFromLeft(buttonWidth));
 }
 
 SectionType SectionPanelComponent::getSelectedSection() const noexcept

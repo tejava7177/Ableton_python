@@ -5,6 +5,7 @@
 #include "Domain/Style.h"
 #include "Engine/MidiPlaybackEngine.h"
 #include "Engine/PatternGenerator.h"
+#include "UI/BackingSummaryComponent.h"
 #include "UI/ChordInputComponent.h"
 #include "UI/GrooveControlComponent.h"
 #include "UI/SectionPanelComponent.h"
@@ -23,17 +24,22 @@ private:
     juce::Label subtitleLabel;
     juce::Label styleLabel;
     juce::ComboBox styleSelector;
-    juce::Label generationLabel;
+    juce::Label optionsHintLabel;
 
     ChordInputComponent chordInputComponent;
     SectionPanelComponent sectionPanelComponent;
     GrooveControlComponent grooveControlComponent;
+    BackingSummaryComponent backingSummaryComponent;
     TransportComponent transportComponent;
     Engine::PatternGenerator patternGenerator;
     Engine::MidiPlaybackEngine playbackEngine;
 
     void refreshGeneratedPreview();
+    void generateBacking(bool shouldStartPlayback);
     [[nodiscard]] StyleType getSelectedStyle() const noexcept;
+    [[nodiscard]] juce::String getSectionText() const;
+    [[nodiscard]] juce::String getEnergyText() const;
+    [[nodiscard]] juce::String getSwingText() const;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };
