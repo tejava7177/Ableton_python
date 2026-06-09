@@ -1,86 +1,30 @@
 # chordflow-analyzer
 
-`chordflow-analyzer` is a lightweight Python prototype for turning a local audio file into a practice-friendly beat- and bar-aligned chord chart JSON.
+`chordflow-analyzer` is a Python prototype for turning local audio files into beat- and bar-aligned chord charts for practice workflows.
 
-## Goal
+## Product Direction
 
-This prototype validates an early ChordFlow workflow:
+The goal is not to become a perfect chord transcription engine.
 
-`audio file -> beat structure -> chroma analysis -> raw beat chords -> post-processed practice chart`
+The real product goal is to support a workflow like:
 
-The project is designed to test whether imported audio can be converted into chord timing data that is useful for backing generation and practice.
+`audio -> chord structure -> accompaniment generation -> practice-ready backing`
 
-## Why Post-Processing Matters
+That means this project needs a chord analysis pipeline that is:
 
-Raw beat-level chord estimation is noisy. Even when tempo and beat tracking are reasonable, beat-by-beat template matching often produces:
+- measurable
+- replaceable
+- comparable across backends
 
-- one-beat harmonic flicker
-- enharmonic inconsistency
-- unstable minor/major toggling
-- too many chord changes for practice use
+## Current Architecture
 
-ChordFlow therefore needs a second layer that converts raw estimates into charts that musicians can actually use.
+The analyzer now uses a backend-based structure:
 
-## Raw Beat-Level Analysis
+- `template`: current librosa/chroma/template baseline
+- `chordino`: optional comparison backend stub
+- `ensemble`: comparison-oriented wrapper
 
-The analyzer first produces one chord estimate per detected beat interval:
-
-- load audio with `librosa`
-- estimate tempo and beat positions
-- extract chroma features
-- match chroma against major/minor chord templates
-- assign one chord label per beat
-
-This raw output is then grouped into bars and simplified.
-
-## Chart Modes
-
-### Simple Mode
-
-`--chart-mode simple`
-
-Simple mode outputs one representative chord per bar.
-
-- chooses the highest weighted bar vote
-- weights votes by confidence
-- ignores `N` unless the whole bar is `N`
-- intended for practice backing generation
-
-Example:
-
-```bash
-python analyze.py --input samples/input.wav --output output/chart-simple.json --chart-mode simple
-```
-
-### Detailed Mode
-
-`--chart-mode detailed`
-
-Detailed mode allows multiple chord changes inside a bar.
-
-- keeps meaningful chord changes
-- removes short outliers
-- applies minimum duration smoothing
-- always keeps the first meaningful chord in the bar
-- intended for future chord chart display
-
-Example:
-
-```bash
-python analyze.py --input samples/input.wav --output output/chart-detailed.json --chart-mode detailed --min-chord-duration-beats 2
-```
-
-## Spelling Modes
-
-Supported values:
-
-- `--spelling flat`
-- `--spelling sharp`
-- `--spelling auto`
-
-Default is `auto`.
-
-For this MVP, `auto` prefers flat spellings when the estimated chart includes common flat-side chords such as `Eb`, `Ab`, `Bb`, `Fm`, or `Cm`. Otherwise it prefers sharp spellings.
+The baseline backend remains the default so the project still works without optional tools.
 
 ## Installation
 
@@ -94,76 +38,132 @@ pip install -r requirements.txt
 ## Analysis Usage
 
 ```bash
-python analyze.py --input samples/input.wav --output output/chord_chart.json
+python analyze.py \
+  --input samples/input.wav \
+  --output output/chord_chart.json \
+  --backend template \
+  --chart-mode simple
 ```
 
-Optional arguments:
+## Main CLI Options
 
-- `--time-signature 4/4`
-- `--beats-per-bar 4`
-- `--hop-length 512`
-- `--min-chord-duration-beats 1`
-- `--chart-mode simple`
-- `--spelling auto`
+- `--backend template|chordino|ensemble`
+- `--chart-mode simple|detailed`
+- `--spelling flat|sharp|auto`
+- `--top-k 5`
+- `--enable-sequence-smoothing`
+- `--disable-sequence-smoothing`
+- `--transition-penalty 0.25`
+- `--same-chord-bonus 0.15`
+- `--save-raw output/raw.json`
+- `--chordino-command /path/to/command`
 - `--debug`
 
-## Output Shape
+## Backends
 
-Simple mode example:
+### Template Backend
 
-```json
-{
-  "bar": 1,
-  "start": 0.557,
-  "end": 3.622,
-  "chords": [
-    {
-      "beat": 1,
-      "time": 0.557,
-      "chord": "Eb",
-      "confidence": 0.74,
-      "source": "bar_vote"
-    }
-  ]
-}
+Backend name:
+
+`librosa-template-baseline`
+
+This backend keeps the current transparent baseline:
+
+- audio loading
+- beat tracking
+- chroma extraction
+- major/minor triad estimation
+- slash-bass inference
+- lightweight extension inference
+
+It also returns top-k beat candidates for smoothing and analysis.
+
+### Chordino Backend
+
+The Chordino backend is optional.
+
+It is intended as a comparison backend when a compatible external command is available. If unavailable, the CLI prints a clear error message instead of breaking the whole project.
+
+Supported configuration:
+
+- `--chordino-command`
+- `CHORDFLOW_CHORDINO_COMMAND`
+
+### Ensemble Backend
+
+The ensemble backend currently wraps the template backend and records whether the optional comparison backend is available. It is designed as a stepping stone for future backend comparison work rather than a fully merged inference system.
+
+## Raw vs Final Output
+
+The backend returns a raw beat-level result:
+
+- tempo
+- beat times
+- beat-level chords
+- top-k beat candidates
+- backend metadata
+
+Final chart output is built afterward:
+
+1. optional sequence smoothing
+2. bar grouping
+3. chart-mode post-processing
+4. spelling normalization
+
+You can save the backend raw result with:
+
+```bash
+python analyze.py \
+  --input samples/input.wav \
+  --output output/chart.json \
+  --save-raw output/raw.json
 ```
 
-Detailed mode example:
+## Chart Modes
 
-```json
-{
-  "bar": 4,
-  "start": 9.590,
-  "end": 12.632,
-  "chords": [
-    {
-      "beat": 1,
-      "time": 9.590,
-      "chord": "Dm",
-      "confidence": 0.81,
-      "source": "beat_change"
-    },
-    {
-      "beat": 3,
-      "time": 11.122,
-      "chord": "G",
-      "confidence": 0.78,
-      "source": "beat_change"
-    }
-  ]
-}
-```
+### Simple Mode
+
+Simple mode outputs one representative chord per bar.
+
+- weighted bar vote
+- confidence-aware
+- intended for practice backing generation
+
+### Detailed Mode
+
+Detailed mode allows multiple chords per bar.
+
+- preserves meaningful changes
+- applies short-segment cleanup
+- intended for future chord-chart display
+
+## Sequence Smoothing
+
+The project now supports a lightweight Viterbi-style sequence smoother.
+
+If top-k candidates are available:
+
+- use emission scores from beat candidates
+- discourage unstable beat-to-beat flips
+- prefer staying on the same chord
+- slightly prefer common functional or relative transitions
+
+This helps reduce patterns like:
+
+- `Cm C Cm C`
+- `G Gm G G`
+- `Eb Ebm Eb Eb`
 
 ## Evaluation
 
-Create a small ground truth file in `ground_truth/`, for example:
+Create a ground truth file such as:
 
 ```json
 {
   "title": "samplemusic_ground_truth",
   "bars": [
     { "bar": 1, "chords": ["Eb"] },
-    { "bar": 2, "chords": ["Bb"] },
+    { "bar": 2, "chords": ["Gm"] },
     { "bar": 3, "chords": ["Db"] },
     { "bar": 4, "chords": ["Dm", "G"] }
   ]
@@ -173,35 +173,40 @@ Create a small ground truth file in `ground_truth/`, for example:
 Then run:
 
 ```bash
-python evaluate.py --prediction output/samplemusic-chord-chart.json --ground-truth ground_truth/samplemusic-bars.json
+python evaluate.py \
+  --prediction output/samplemusic-simple.json \
+  --ground-truth ground_truth/samplemusic-bars.json
 ```
 
-The report includes:
+Useful options:
 
-- total bars compared
-- exact bar match accuracy
+- `--normalize-extensions`
+- `--root-only`
+
+The evaluation report includes:
+
+- exact bar accuracy
 - first chord root accuracy
 - root overlap accuracy
-- missed bars
-- extra bars
+- weighted chord symbol accuracy
+- weighted root accuracy
+- confusion pairs
 
-## Limitations
+## Current Limitations
 
-- This is not production-grade chord recognition.
-- Downbeat detection is still approximate.
+- This is still not production-grade chord recognition.
+- Downbeat detection is approximate.
 - The first detected beat is assumed to be bar 1 beat 1.
-- Major and minor triads only.
-- No 7th chords, slash chords, or richer harmonic vocabulary yet.
-- Simple mode is intended for practice backing generation.
-- Detailed mode is intended for future chord chart display.
-- Accuracy may be unstable on dense mixes, noisy audio, modulation, or complex harmony.
+- Chordino integration is not fully implemented yet.
+- Slash chords and extensions are still heuristic.
+- Dense orchestration and modulation still produce unstable results.
 
-## Future Plan
+## Research Direction
 
-- Essentia backend for comparison
-- madmom backend for comparison
-- explicit downbeat detection
-- 7th chord support
-- slash chord support
-- key estimation
-- stronger harmony-aware smoothing
+The next meaningful improvements are:
+
+- real backend comparison against Chordino or NNLS-Chroma
+- stronger sequence decoding
+- better relative-major/minor ambiguity handling
+- richer timing/downbeat handling
+- comparison against more curated ground truth sets

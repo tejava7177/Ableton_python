@@ -6,6 +6,7 @@ from typing import Iterable
 
 import numpy as np
 
+from .backends.base import ChordCandidate
 from .chord_templates import ChordTemplate, PITCH_CLASS_NAMES, build_templates
 from .models import BeatChord
 
@@ -166,18 +167,36 @@ def _compose_label(template: ChordTemplate | None, chroma_vector: np.ndarray, ba
     return chord_label, None
 
 
+def _top_k_candidates(
+    score_map: dict[str, float],
+    chroma_vector: np.ndarray,
+    bass_vector: np.ndarray,
+    templates_by_label: dict[str, ChordTemplate],
+    top_k: int,
+) -> list[ChordCandidate]:
+    ranked = sorted(score_map.items(), key=lambda item: item[1], reverse=True)[:top_k]
+    candidates: list[ChordCandidate] = []
+    for label, score in ranked:
+        template = templates_by_label[label]
+        resolved_label, _ = _compose_label(template, chroma_vector, bass_vector)
+        candidates.append(ChordCandidate(chord=resolved_label, score=score))
+    return candidates
+
+
 def estimate_beat_chords(
     beat_times: np.ndarray,
     chroma: np.ndarray,
     frame_times: np.ndarray,
     bass_chroma: np.ndarray,
     beats_per_bar: int = 4,
+    top_k: int = 5,
     debug: bool = False,
-) -> list[BeatChord]:
+) -> tuple[list[BeatChord], list[list[ChordCandidate]]]:
     """Estimate one chord per beat interval using template matching."""
     templates = build_templates()
     templates_by_label = {template.label: template for template in templates}
     beat_chords: list[BeatChord] = []
+    beat_candidates: list[list[ChordCandidate]] = []
 
     for index, start_time in enumerate(beat_times):
         if index + 1 < len(beat_times):
@@ -192,6 +211,7 @@ def estimate_beat_chords(
         template, confidence, score_map = _match_template(aggregated, templates)
         template = _resolve_relative_family(template, aggregated, score_map, templates_by_label)
         label, bass_root = _compose_label(template, aggregated, aggregated_bass)
+        candidates = _top_k_candidates(score_map, aggregated, aggregated_bass, templates_by_label, top_k)
 
         beat_chords.append(
                 BeatChord(
@@ -202,8 +222,10 @@ def estimate_beat_chords(
                     confidence=confidence,
                     source="beat_raw",
                     bass_root=bass_root,
+                    candidates=[candidate.to_dict() for candidate in candidates],
             )
         )
+        beat_candidates.append(candidates)
 
         if debug:
             print(
@@ -211,4 +233,4 @@ def estimate_beat_chords(
                 f"chord={label} confidence={confidence:.3f}"
             )
 
-    return beat_chords
+    return beat_chords, beat_candidates

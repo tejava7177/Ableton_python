@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from math import inf
 
-from .enharmonic import chord_root
+from .enharmonic import chord_root, normalize_chord_spelling, split_chord_label
 from .models import BarChord, BeatChord, ChordChart
 
 
@@ -200,12 +201,133 @@ def _bar_vote(bar: BarChord) -> list[BeatChord]:
     ]
 
 
+def _normalize_candidate_label(label: str) -> str:
+    normalized = normalize_chord_spelling(label, preferred="flat")
+    normalized = normalized.replace("maj7", "")
+    normalized = normalized.replace("m7", "m")
+    normalized = normalized.replace("7", "")
+    normalized = normalized.replace("sus4", "")
+    return normalized
+
+
+def _relative_transition_bonus(previous: str, current: str) -> float:
+    previous_norm = _normalize_candidate_label(previous)
+    current_norm = _normalize_candidate_label(current)
+
+    if previous_norm == current_norm:
+        return 0.18
+
+    prev_root, prev_suffix = split_chord_label(previous_norm)
+    curr_root, curr_suffix = split_chord_label(current_norm)
+
+    preferred_pairs = {
+        ("Eb", "Gm"), ("Gm", "Db"), ("Db", "Dm"), ("Dm", "G"),
+        ("G", "Cm"), ("Cm", "Bb"), ("Bb", "Fm"), ("Fm", "Bb"),
+        ("Bb", "Eb"), ("Ab", "Eb"),
+    }
+    if (prev_root + prev_suffix, curr_root + curr_suffix) in preferred_pairs:
+        return 0.14
+
+    relative_pairs = {
+        ("Eb", "Cm"), ("Bb", "Gm"), ("Db", "Bbm"), ("Ab", "Fm"),
+        ("C", "Am"), ("G", "Em"), ("D", "Bm"), ("A", "F#m"),
+    }
+    left = prev_root + prev_suffix
+    right = curr_root + curr_suffix
+    if (left, right) in relative_pairs or (right, left) in relative_pairs:
+        return 0.08
+
+    if prev_root == curr_root:
+        return 0.04
+
+    return 0.0
+
+
+def _bar_candidates(bar: BarChord, limit: int = 5) -> list[tuple[str, float, BeatChord]]:
+    scores: dict[str, float] = defaultdict(float)
+    first_occurrence: dict[str, BeatChord] = {}
+
+    for chord in bar.chords:
+        candidates = chord.candidates or [{"chord": chord.chord, "score": chord.confidence}]
+        for candidate in candidates[:limit]:
+            label = _normalize_candidate_label(candidate["chord"])
+            if label == "N":
+                continue
+            scores[label] += float(candidate["score"])
+            first_occurrence.setdefault(label, chord)
+
+    if not scores:
+        fallback = bar.chords[0] if bar.chords else BeatChord(0, 1, bar.start, "N", 0.0, "bar_vote")
+        return [("N", fallback.confidence, fallback)]
+
+    ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit]
+    return [(label, score, first_occurrence[label]) for label, score in ranked]
+
+
+def _bar_sequence_vote(bars: list[BarChord]) -> dict[int, list[BeatChord]]:
+    candidate_grid = [_bar_candidates(bar) for bar in bars]
+    scores: list[dict[int, float]] = []
+    backpointers: list[dict[int, int | None]] = []
+
+    for bar_index, candidates in enumerate(candidate_grid):
+        current_scores: dict[int, float] = {}
+        current_backpointers: dict[int, int | None] = {}
+        for candidate_index, (label, score, _) in enumerate(candidates):
+            emission = score
+            if bar_index == 0:
+                current_scores[candidate_index] = emission
+                current_backpointers[candidate_index] = None
+                continue
+
+            best_score = -inf
+            best_prev: int | None = None
+            previous_candidates = candidate_grid[bar_index - 1]
+            previous_scores = scores[bar_index - 1]
+            for previous_index, (previous_label, _, _) in enumerate(previous_candidates):
+                candidate_score = previous_scores[previous_index] + emission + _relative_transition_bonus(previous_label, label)
+                if previous_label != label:
+                    candidate_score -= 0.12
+                if candidate_score > best_score:
+                    best_score = candidate_score
+                    best_prev = previous_index
+
+            current_scores[candidate_index] = best_score
+            current_backpointers[candidate_index] = best_prev
+
+        scores.append(current_scores)
+        backpointers.append(current_backpointers)
+
+    final_index = max(scores[-1], key=scores[-1].get)
+    chosen_indices = [final_index]
+    for bar_index in range(len(candidate_grid) - 1, 0, -1):
+        previous_index = backpointers[bar_index][chosen_indices[-1]]
+        chosen_indices.append(0 if previous_index is None else previous_index)
+    chosen_indices.reverse()
+
+    resolved: dict[int, list[BeatChord]] = {}
+    for bar, candidate_index in zip(bars, chosen_indices):
+        label, score, source = candidate_grid[bar.bar - 1][candidate_index]
+        resolved[bar.bar] = [
+            BeatChord(
+                beat_index=source.beat_index,
+                beat_in_bar=1,
+                time=bar.start,
+                chord=label,
+                confidence=score / max(1, len(bar.chords)),
+                source="bar_sequence_vote",
+                bass_root=source.bass_root,
+            )
+        ]
+    return resolved
+
+
 def build_practice_chart(
     raw_chart: ChordChart,
     chart_mode: str,
     min_duration_beats: int = 1,
 ) -> ChordChart:
     """Convert raw beat-level bars into simple or detailed practice charts."""
+    bar_sequence_result = _bar_sequence_vote(raw_chart.bars) if chart_mode == "simple" else {}
     processed_bars: list[BarChord] = []
     for bar in raw_chart.bars:
         processed_beat_chords = remove_short_outliers(
@@ -213,7 +335,9 @@ def build_practice_chart(
         )
 
         if chart_mode == "simple":
-            output_chords = _bar_vote(BarChord(bar.bar, bar.start, bar.end, processed_beat_chords))
+            output_chords = bar_sequence_result.get(bar.bar)
+            if not output_chords:
+                output_chords = _bar_vote(BarChord(bar.bar, bar.start, bar.end, processed_beat_chords))
         else:
             output_chords = simplify_bar_chords(processed_beat_chords)
             if output_chords:

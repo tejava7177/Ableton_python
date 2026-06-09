@@ -7,13 +7,12 @@ import argparse
 import json
 from pathlib import Path
 
-from chordflow_analyzer.audio_loader import load_audio
-from chordflow_analyzer.beat_tracker import track_beats
+from chordflow_analyzer.backends import AnalyzerConfig, BackendUnavailableError, create_backend
 from chordflow_analyzer.chart_builder import build_chart
-from chordflow_analyzer.chord_estimator import estimate_beat_chords
-from chordflow_analyzer.chroma_extractor import extract_chroma
 from chordflow_analyzer.enharmonic import normalize_chart_spelling
+from chordflow_analyzer.key_context import estimate_key_context
 from chordflow_analyzer.post_processor import build_practice_chart
+from chordflow_analyzer.sequence_smoother import smooth_candidate_sequence
 
 
 def parse_args() -> argparse.Namespace:
@@ -21,6 +20,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Analyze a local audio file into a chord chart JSON.")
     parser.add_argument("--input", required=True, help="Path to a local audio file.")
     parser.add_argument("--output", required=True, help="Path to the output chord chart JSON.")
+    parser.add_argument(
+        "--backend",
+        choices=("template", "chordino", "ensemble"),
+        default="template",
+        help="Chord recognition backend.",
+    )
     parser.add_argument("--time-signature", default="4/4", help="Time signature label for output metadata.")
     parser.add_argument("--beats-per-bar", type=int, default=4, help="Beats per bar for chart grouping.")
     parser.add_argument("--hop-length", type=int, default=512, help="Hop length used for chroma extraction.")
@@ -36,6 +41,13 @@ def parse_args() -> argparse.Namespace:
         default="auto",
         help="Preferred chord spelling for output.",
     )
+    parser.add_argument("--top-k", type=int, default=5, help="Top-k backend chord candidates per beat.")
+    parser.add_argument("--enable-sequence-smoothing", action="store_true", default=True, help="Enable sequence smoothing.")
+    parser.add_argument("--disable-sequence-smoothing", action="store_true", help="Disable sequence smoothing.")
+    parser.add_argument("--transition-penalty", type=float, default=0.25, help="Transition penalty for sequence smoothing.")
+    parser.add_argument("--same-chord-bonus", type=float, default=0.15, help="Bonus for staying on the same chord.")
+    parser.add_argument("--save-raw", help="Optional path for saving raw backend output JSON.")
+    parser.add_argument("--chordino-command", help="Optional chordino/sonic-annotator command path.")
     parser.add_argument(
         "--min-chord-duration-beats",
         type=int,
@@ -53,24 +65,37 @@ def main() -> None:
     input_path = Path(args.input)
     output_path = Path(args.output)
 
-    y, sr = load_audio(input_path)
-    tempo, beat_times = track_beats(y, sr)
-    chroma, frame_times, bass_chroma = extract_chroma(y, sr, hop_length=args.hop_length)
-    beat_chords = estimate_beat_chords(
-        beat_times=beat_times,
-        chroma=chroma,
-        frame_times=frame_times,
-        bass_chroma=bass_chroma,
+    config = AnalyzerConfig(
+        time_signature=args.time_signature,
         beats_per_bar=args.beats_per_bar,
+        hop_length=args.hop_length,
+        min_chord_duration_beats=args.min_chord_duration_beats,
+        chart_mode=args.chart_mode,
+        spelling=args.spelling,
         debug=args.debug,
+        top_k=args.top_k,
+        enable_sequence_smoothing=False if args.disable_sequence_smoothing else args.enable_sequence_smoothing,
+        transition_penalty=args.transition_penalty,
+        same_chord_bonus=args.same_chord_bonus,
+        chordino_command=args.chordino_command,
     )
+
+    backend = create_backend(args.backend, config)
+    try:
+        raw_result = backend.analyze(str(input_path), config)
+    except BackendUnavailableError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    beat_chords = raw_result.beat_chords
+    if config.enable_sequence_smoothing:
+        beat_chords = smooth_candidate_sequence(beat_chords, raw_result.beat_candidates, config)
 
     raw_chart = build_chart(
         title=input_path.stem,
-        tempo=tempo,
+        tempo=raw_result.tempo,
         time_signature=args.time_signature,
         beats_per_bar=args.beats_per_bar,
-        beat_times=beat_times,
+        beat_times=raw_result.beat_times,
         beat_chords=beat_chords,
     )
     chart = build_practice_chart(
@@ -78,15 +103,32 @@ def main() -> None:
         chart_mode=args.chart_mode,
         min_duration_beats=args.min_chord_duration_beats,
     )
-    chart = normalize_chart_spelling(chart, preferred=args.spelling)
+    key_context = estimate_key_context(beat_chords)
+    preferred_spelling = key_context["preferred_spelling"] if args.spelling == "auto" else args.spelling
+    chart = normalize_chart_spelling(chart, preferred=preferred_spelling)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
         json.dump(chart.to_dict(), handle, indent=2)
 
+    if args.save_raw:
+        raw_output_path = Path(args.save_raw)
+        raw_output_path.parent.mkdir(parents=True, exist_ok=True)
+        raw_payload = {
+            "tempo": raw_result.tempo,
+            "beatTimes": [round(float(value), 3) for value in raw_result.beat_times],
+            "beatChords": [beat.to_dict() for beat in raw_result.beat_chords],
+            "beatCandidates": [[candidate.to_dict() for candidate in candidates] for candidates in raw_result.beat_candidates],
+            "metadata": raw_result.metadata,
+            "keyContext": key_context,
+        }
+        with raw_output_path.open("w", encoding="utf-8") as handle:
+            json.dump(raw_payload, handle, indent=2)
+
     print(f"Input file: {input_path}")
-    print(f"Estimated tempo: {tempo:.2f}")
-    print(f"Number of beats: {len(beat_times)}")
+    print(f"Backend: {backend.name}")
+    print(f"Estimated tempo: {raw_result.tempo:.2f}")
+    print(f"Number of beats: {len(raw_result.beat_times)}")
     print(f"Number of bars: {len(chart.bars)}")
     print(f"Output path: {output_path}")
 

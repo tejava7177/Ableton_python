@@ -16,6 +16,7 @@ class BeatChord:
     confidence: float
     source: str = "beat_raw"
     bass_root: str | None = None
+    candidates: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dictionary."""
@@ -28,6 +29,8 @@ class BeatChord:
         }
         if self.bass_root:
             payload["bassRoot"] = self.bass_root
+        if self.candidates:
+            payload["candidates"] = self.candidates
         return payload
 
 

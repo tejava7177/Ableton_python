@@ -64,12 +64,17 @@ def normalize_chord_spelling(chord: str, preferred: str = "flat") -> str:
 def choose_spelling_preference(chart: ChordChart) -> str:
     """Choose a simple display spelling preference from chart content."""
     flat_indicators = {"Eb", "Ab", "Bb", "Fm", "Cm", "Db", "Gb", "Bbm", "Ebm", "Abm"}
+    flat_score = 0
+    sharp_score = 0
     for bar in chart.bars:
         for chord in bar.chords:
-            normalized = normalize_chord_spelling(chord.chord, preferred="flat")
-            if normalized in flat_indicators:
-                return "flat"
-    return "sharp"
+            normalized_flat = normalize_chord_spelling(chord.chord, preferred="flat")
+            normalized_sharp = normalize_chord_spelling(chord.chord, preferred="sharp")
+            if normalized_flat in flat_indicators:
+                flat_score += 1
+            if "#" in normalized_sharp:
+                sharp_score += 1
+    return "flat" if flat_score >= sharp_score else "sharp"
 
 
 def normalize_chart_spelling(chart: ChordChart, key: str | None = None, preferred: str = "flat") -> ChordChart:
