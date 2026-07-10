@@ -1,28 +1,51 @@
 # Development Roadmap
 
-## Phase 1
+Phased plan from the current UI shell to a demoable auto-accompaniment workstation.
+Each phase ends at something runnable and showable.
 
-Make the current prototype musically functional.
+## Phase 1 — Audible core
 
-- implement chord progression parsing from text input
-- define an internal progression model
-- add a simple style-to-pattern mapping for drums and bass
-- wire transport actions to generated playback data
+Make the instrument actually play.
 
-## Phase 2
+- Build the Domain model: Style → Section → TrackPattern → PatternNote
+- Stand up the audio engine: `AudioDeviceManager` + per-track `Synthesiser`
+- Implement the sample-accurate PPQ sequencer clock
+- Implement `resolvePitch` chord-following transposition
+- Ship one built-in style (drums + bass + chord + pad)
+- Wire transport: chord input → press play → hear a chord-following band
 
-Turn playback into a real practice tool.
+Milestone: type chords, press play, hear a band that follows them.
 
-- add loop behavior
-- reflect section changes in playback state
-- make Energy and Swing affect pattern output
-- improve status feedback and error handling
+## Phase 2 — Arrangement & feel
 
-## Phase 3
+Make it perform like an arranger.
 
-Make the result portable and extensible.
+- Section state machine with bar-quantized switching
+- Intro, Main A/B, Fill (play-once → advance), Ending (play-once → stop)
+- Tempo, swing, and energy affect the generated performance
+- Per-track Voice selection and mix (volume, pan, octave)
+- Loop and practice controls
 
-- export generated accompaniment as MIDI
-- improve pattern variation by style
-- refine section transition behavior
-- prepare the architecture for larger pattern libraries
+Milestone: trigger sections live and shape the groove during playback.
+
+## Phase 3 — Content creation
+
+Make styles authorable.
+
+- Step-grid pattern editor bound to the Domain model
+- Edit drums (hits) and bass/chord/pad (relative-degree notes)
+- Immediate audible feedback on edits
+- Save / load styles to file
+
+Milestone: author a new style and play it back.
+
+## Phase 4 — Export & polish
+
+Make it portable and presentable.
+
+- MIDI export of the arranged result (reusing the live engine)
+- Visual design pass toward the target UI skin
+- Cross-platform build verification (macOS / Windows)
+- README screenshots and a short demo capture
+
+Milestone: a polished, cross-platform build with an exportable result and a clean demo.

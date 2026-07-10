@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import os
 from typing import Iterable
 
 import numpy as np
 
 from .backends.base import ChordCandidate
 from .chord_templates import ChordTemplate, PITCH_CLASS_NAMES, build_templates
+from .key_estimator import diatonic_chord_labels, estimate_key, key_name
 from .models import BeatChord
 
 NO_CHORD_CONFIDENCE_THRESHOLD = 0.5
@@ -19,6 +21,10 @@ SEVENTH_MIN_STRENGTH = 0.54
 SEVENTH_MARGIN = 0.05
 RELATIVE_SCORE_MARGIN = 0.06
 RELATIVE_NOTE_MARGIN = 0.03
+# Soft additive bonus applied to a template's cosine score when the chord is
+# diatonic to the estimated global key. Tuned via experiments/measure.py;
+# overridable through CHORDFLOW_KEY_BONUS for sweeps.
+DIATONIC_KEY_BONUS = float(os.environ.get("CHORDFLOW_KEY_BONUS", "0.12"))
 
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
@@ -44,22 +50,30 @@ def _aggregate_chroma_for_interval(
 def _match_template(
     chroma_vector: np.ndarray,
     templates: Iterable[ChordTemplate],
+    diatonic_labels: frozenset[str] = frozenset(),
+    key_bonus: float = 0.0,
 ) -> tuple[ChordTemplate | None, float, dict[str, float]]:
     score_map: dict[str, float] = {}
+    raw_best_confidence = 0.0
     best_template: ChordTemplate | None = None
-    best_confidence = 0.0
+    best_score = -1.0
 
     for template in templates:
         confidence = _cosine_similarity(chroma_vector, template.vector)
+        raw_best_confidence = max(raw_best_confidence, confidence)
+        if key_bonus and template.label in diatonic_labels:
+            confidence += key_bonus
         score_map[template.label] = confidence
-        if confidence > best_confidence:
+        if confidence > best_score:
             best_template = template
-            best_confidence = confidence
+            best_score = confidence
 
-    if best_confidence < NO_CHORD_CONFIDENCE_THRESHOLD or best_template is None:
-        return None, best_confidence, score_map
+    # No-chord detection uses the raw (pre-bonus) similarity so the prior never
+    # invents a chord where the audio genuinely lacks one.
+    if raw_best_confidence < NO_CHORD_CONFIDENCE_THRESHOLD or best_template is None:
+        return None, raw_best_confidence, score_map
 
-    return best_template, best_confidence, score_map
+    return best_template, score_map[best_template.label], score_map
 
 
 def _resolve_slash_bass(template: ChordTemplate | None, bass_vector: np.ndarray) -> str | None:
@@ -198,6 +212,12 @@ def estimate_beat_chords(
     beat_chords: list[BeatChord] = []
     beat_candidates: list[list[ChordCandidate]] = []
 
+    # Estimate a global key once and derive a diatonic prior shared by all beats.
+    tonic, mode, key_score = estimate_key(chroma)
+    diatonic_labels = frozenset(diatonic_chord_labels(tonic, mode))
+    if debug:
+        print(f"[debug] estimated key={key_name(tonic, mode)} score={key_score:.3f} diatonic={sorted(diatonic_labels)}")
+
     for index, start_time in enumerate(beat_times):
         if index + 1 < len(beat_times):
             end_time = float(beat_times[index + 1])
@@ -208,7 +228,7 @@ def estimate_beat_chords(
 
         aggregated = _aggregate_chroma_for_interval(chroma, frame_times, float(start_time), end_time)
         aggregated_bass = _aggregate_chroma_for_interval(bass_chroma, frame_times, float(start_time), end_time)
-        template, confidence, score_map = _match_template(aggregated, templates)
+        template, confidence, score_map = _match_template(aggregated, templates, diatonic_labels, DIATONIC_KEY_BONUS)
         template = _resolve_relative_family(template, aggregated, score_map, templates_by_label)
         label, bass_root = _compose_label(template, aggregated, aggregated_bass)
         candidates = _top_k_candidates(score_map, aggregated, aggregated_bass, templates_by_label, top_k)

@@ -1,37 +1,41 @@
-# Workflow
+# Workflows
 
-## Primary User Flow
+ChordFlow Workstation supports two workflows that share one engine: playing an
+arrangement, and creating the style that drives it.
 
-1. App launch
-2. Enter a chord progression
-3. Select a backing style
-4. Generate accompaniment
-5. Adjust groove feel with Energy and Swing
-6. Use arranger-style sections when needed
-7. Press Play to begin practice
-8. Loop or Stop playback
-9. Export MIDI if the generated result is worth keeping
+## Play workflow
 
-## UX Intent
+1. Launch the app
+2. Enter a chord progression (text or chord track)
+3. Choose a style
+4. Press play — drums, bass, chords, and pad perform the progression
+5. Trigger sections live: Intro → Main A / Main B, drop a Fill, end with Ending
+6. Shape the feel with tempo, swing, and energy; loop a section to practice
+7. Adjust per-track Voice and mix as desired
+8. Export the result as a MIDI file
 
-The interface should feel like a compact workstation panel rather than a DAW. The user should see a few large, readable controls that imply musical action instead of engineering complexity.
+The accompaniment always follows the chord track: every pattern note is voiced
+against the current chord, so changing the progression instantly changes what plays.
 
-## MVP Behavior Notes
+## Create workflow (style authoring)
 
-- Chord progression input is text-based for speed and simplicity
-- Style selection is intentionally lightweight in the first version
-- Generation should produce a simple but usable drum and bass backing
-- Section controls should support arranger-style experimentation without requiring timeline editing
-- Groove controls should influence the generated result in understandable ways
-- Transport and loop behavior should make practice frictionless
+1. Choose or start a style
+2. Select a section to edit (Intro, Main A, Main B, Fill, Ending)
+3. Edit each track's pattern on the step grid:
+   - drums: toggle hits per step
+   - bass / chord / pad: place notes as degrees relative to the chord
+4. Assign a Voice to each track and set volume, pan, and octave
+5. Audition against a test progression — edits play back immediately
+6. Save the style as a reusable file
 
-## Future Expansion
+## UX intent
 
-Later milestones can attach actual musical logic to the same workflow:
+The interface should read as a compact, performance-ready instrument rather than a
+DAW: a few large, legible controls that imply musical action. Playing should feel
+immediate; authoring should feel like sketching patterns, not engineering them.
 
-- parsed chord sequences
-- style-aware pattern generation
-- section transition rules
-- MIDI playback scheduling
-- practice loop behavior
-- stronger MIDI export workflows
+## Design reference
+
+The target main screen layout — transport + key/tempo, arranger sections, the
+track × step pattern grid, the Voice inspector, and the chord track — is captured in
+the project's UI mockups and informs the JUCE component layout.

@@ -1,0 +1,501 @@
+{
+  "title": "samplemusic_ground_truth_draft",
+  "bars": [
+    {
+      "bar": 1,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 2,
+      "chords": [
+        "Gm"
+      ]
+    },
+    {
+      "bar": 3,
+      "chords": [
+        "Db"
+      ]
+    },
+    {
+      "bar": 4,
+      "chords": [
+        "Dm",
+        "G"
+      ]
+    },
+    {
+      "bar": 5,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 6,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 7,
+      "chords": [
+        "Fm"
+      ]
+    },
+    {
+      "bar": 8,
+      "chords": [
+        "Bb",
+        "Ab",
+        "Eb"
+      ]
+    },
+    {
+      "bar": 9,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 10,
+      "chords": [
+        "Gm"
+      ]
+    },
+    {
+      "bar": 11,
+      "chords": [
+        "Db"
+      ]
+    },
+    {
+      "bar": 12,
+      "chords": [
+        "Dm",
+        "G"
+      ]
+    },
+    {
+      "bar": 13,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 14,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 15,
+      "chords": [
+        "F"
+      ]
+    },
+    {
+      "bar": 16,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 17,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 18,
+      "chords": [
+        "Gm/D"
+      ]
+    },
+    {
+      "bar": 19,
+      "chords": [
+        "Db"
+      ]
+    },
+    {
+      "bar": 20,
+      "chords": [
+        "G"
+      ]
+    },
+    {
+      "bar": 21,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 22,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 23,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 24,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 25,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 26,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 27,
+      "chords": [
+        "Fm"
+      ]
+    },
+    {
+      "bar": 28,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 29,
+      "chords": [
+        "Ab"
+      ]
+    },
+    {
+      "bar": 30,
+      "chords": [
+        "G"
+      ]
+    },
+    {
+      "bar": 31,
+      "chords": [
+        "Ab"
+      ]
+    },
+    {
+      "bar": 32,
+      "chords": [
+        "G"
+      ]
+    },
+    {
+      "bar": 33,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 34,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 35,
+      "chords": [
+        "Ab"
+      ]
+    },
+    {
+      "bar": 36,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 37,
+      "chords": [
+        "Fm"
+      ]
+    },
+    {
+      "bar": 38,
+      "chords": [
+        "Gm"
+      ]
+    },
+    {
+      "bar": 39,
+      "chords": [
+        "Gm"
+      ]
+    },
+    {
+      "bar": 40,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 41,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 42,
+      "chords": [
+        "Gm"
+      ]
+    },
+    {
+      "bar": 43,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 44,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 45,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 46,
+      "chords": [
+        "Bb/D"
+      ]
+    },
+    {
+      "bar": 47,
+      "chords": [
+        "Db"
+      ]
+    },
+    {
+      "bar": 48,
+      "chords": [
+        "Dm"
+      ]
+    },
+    {
+      "bar": 49,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 50,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 51,
+      "chords": [
+        "F/A"
+      ]
+    },
+    {
+      "bar": 52,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 53,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 54,
+      "chords": [
+        "Bb/D"
+      ]
+    },
+    {
+      "bar": 55,
+      "chords": [
+        "Db"
+      ]
+    },
+    {
+      "bar": 56,
+      "chords": [
+        "G"
+      ]
+    },
+    {
+      "bar": 57,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 58,
+      "chords": [
+        "Bb"
+      ]
+    },
+    {
+      "bar": 59,
+      "chords": [
+        "Fm"
+      ]
+    },
+    {
+      "bar": 60,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 61,
+      "chords": [
+        "Ab"
+      ]
+    },
+    {
+      "bar": 62,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 63,
+      "chords": [
+        "Ab"
+      ]
+    },
+    {
+      "bar": 64,
+      "chords": [
+        "G"
+      ]
+    },
+    {
+      "bar": 65,
+      "chords": [
+        "Ab"
+      ]
+    },
+    {
+      "bar": 66,
+      "chords": [
+        "G"
+      ]
+    },
+    {
+      "bar": 67,
+      "chords": [
+        "Ab"
+      ]
+    },
+    {
+      "bar": 68,
+      "chords": [
+        "G"
+      ]
+    },
+    {
+      "bar": 69,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 70,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 71,
+      "chords": [
+        "Ab"
+      ]
+    },
+    {
+      "bar": 72,
+      "chords": [
+        "Eb"
+      ]
+    },
+    {
+      "bar": 73,
+      "chords": [
+        "Fm"
+      ]
+    },
+    {
+      "bar": 74,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 75,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 76,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 77,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 78,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 79,
+      "chords": [
+        "Cm"
+      ]
+    },
+    {
+      "bar": 80,
+      "chords": [
+        "Eb/Bb"
+      ]
+    },
+    {
+      "bar": 81,
+      "chords": [
+        "F/A"
+      ]
+    },
+    {
+      "bar": 82,
+      "chords": [
+        "F/A"
+      ]
+    }
+  ]
+}

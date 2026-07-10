@@ -18,13 +18,42 @@ That means this project needs a chord analysis pipeline that is:
 
 ## Current Architecture
 
-The analyzer now uses a backend-based structure:
+The analyzer uses a backend-based structure:
 
-- `template`: current librosa/chroma/template baseline
+- `template`: librosa/chroma/template baseline with a key-aware diatonic prior **(default, most accurate on tested material)**
+- `advanced`: HQ beat-synchronous chroma + harmonic-aware vocabulary + key-aware HMM/Viterbi decoder; adds a richer chord vocabulary (7ths, sus, dim/aug), inversions, and tuning correction
 - `chordino`: optional comparison backend stub
 - `ensemble`: comparison-oriented wrapper
 
-The baseline backend remains the default so the project still works without optional tools.
+The `template` backend remains the default so the project still works without optional tools.
+
+### Accuracy status (samplemusic, 16-bar ground truth)
+
+| backend | exact bar | first-chord root | weighted root |
+| --- | --- | --- | --- |
+| `template` | 56% | 69% | 55% |
+| `advanced` | 50% | 50% | 40% |
+
+The `template` backend is currently more accurate on the strict major/minor metric;
+`advanced` is the better platform for richer harmonic detail. Both expose the estimated
+`key`, `tempo`, and (advanced) `tuningSemitones` in the output chart for downstream UI use.
+
+These numbers are measured on a single 16-bar ground-truth sample, so differences of a
+bar or two are noise-level. Expanding ground truth is the prerequisite for any further
+accuracy work — see the measurement harness below.
+
+### Measurement harness
+
+`experiments/measure.py` runs the full pipeline on a fixed sample and prints a one-line
+accuracy summary so a code change can be A/B compared immediately:
+
+```bash
+python experiments/measure.py --backend template --verbose
+python experiments/measure.py --backend advanced --label "my-change"
+```
+
+Most tuning knobs in the advanced backend are overridable via `CHORDFLOW_*` environment
+variables (see `chordflow_analyzer/advanced/`) for quick sweeps.
 
 ## Installation
 
@@ -47,7 +76,7 @@ python analyze.py \
 
 ## Main CLI Options
 
-- `--backend template|chordino|ensemble`
+- `--backend advanced|template|chordino|ensemble`
 - `--chart-mode simple|detailed`
 - `--spelling flat|sharp|auto`
 - `--top-k 5`
@@ -77,6 +106,25 @@ This backend keeps the current transparent baseline:
 - lightweight extension inference
 
 It also returns top-k beat candidates for smoothing and analysis.
+
+### Advanced Backend
+
+Backend name:
+
+`advanced-hmm`
+
+A from-the-ground-up recognition pipeline:
+
+- harmonic-percussive separation hook + tuning estimation
+- beat-synchronous chroma (treble for quality, dedicated bass register for inversions)
+- harmonic-aware chord vocabulary across major, minor, 7, m7, maj7, sus2/4, dim, aug
+- a complexity prior that keeps the rich vocabulary from fragmenting common triads
+- a key-aware HMM decoded with Viterbi, generalizing the baseline's ad-hoc smoothing
+
+It outputs the estimated key and tuning, and preserves inversions and extended qualities
+in detailed/raw output. On the current single-sample ground truth it does not yet beat the
+`template` baseline on strict major/minor accuracy; it is the stronger platform for future
+work once more ground truth exists.
 
 ### Chordino Backend
 

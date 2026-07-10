@@ -9,6 +9,7 @@ from ..audio_loader import load_audio
 from ..beat_tracker import track_beats
 from ..chord_estimator import estimate_beat_chords
 from ..chroma_extractor import extract_chroma
+from ..key_estimator import estimate_key, key_name
 
 
 class TemplateBackend(ChordRecognitionBackend):
@@ -20,6 +21,7 @@ class TemplateBackend(ChordRecognitionBackend):
         y, sr = load_audio(Path(audio_path))
         tempo, beat_times = track_beats(y, sr)
         chroma, frame_times, bass_chroma = extract_chroma(y, sr, hop_length=config.hop_length)
+        tonic, mode, _ = estimate_key(chroma)
         beat_chords, beat_candidates = estimate_beat_chords(
             beat_times=beat_times,
             chroma=chroma,
@@ -35,5 +37,5 @@ class TemplateBackend(ChordRecognitionBackend):
             beat_times=beat_times,
             beat_chords=beat_chords,
             beat_candidates=beat_candidates,
-            metadata={"backend": self.name, "sample_rate": sr},
+            metadata={"backend": self.name, "sample_rate": sr, "key": key_name(tonic, mode)},
         )

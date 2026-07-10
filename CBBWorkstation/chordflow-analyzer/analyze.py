@@ -15,6 +15,15 @@ from chordflow_analyzer.post_processor import build_practice_chart
 from chordflow_analyzer.sequence_smoother import smooth_candidate_sequence
 
 
+def _format_key_context(key_context: dict) -> str | None:
+    """Approximate key label from chord-usage stats (fallback for backends that
+    do not estimate a key themselves)."""
+    centers = key_context.get("tonal_centers") or []
+    if not centers:
+        return None
+    return f"{centers[0][0]} (tonal center)"
+
+
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments."""
     parser = argparse.ArgumentParser(description="Analyze a local audio file into a chord chart JSON.")
@@ -22,9 +31,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True, help="Path to the output chord chart JSON.")
     parser.add_argument(
         "--backend",
-        choices=("template", "chordino", "ensemble"),
+        choices=("advanced", "template", "chordino", "ensemble"),
         default="template",
-        help="Chord recognition backend.",
+        help="Chord recognition backend. 'template' is the most accurate on tested "
+        "material; 'advanced' adds a richer vocabulary, inversions, and tuning correction.",
     )
     parser.add_argument("--time-signature", default="4/4", help="Time signature label for output metadata.")
     parser.add_argument("--beats-per-bar", type=int, default=4, help="Beats per bar for chart grouping.")
@@ -107,9 +117,17 @@ def main() -> None:
     preferred_spelling = key_context["preferred_spelling"] if args.spelling == "auto" else args.spelling
     chart = normalize_chart_spelling(chart, preferred=preferred_spelling)
 
+    # Surface song-level context (key, tuning) in the chart so downstream
+    # consumers like the workstation UI can display it directly.
+    chart_payload = chart.to_dict()
+    detected_key = raw_result.metadata.get("key")
+    chart_payload["key"] = detected_key if detected_key else _format_key_context(key_context)
+    if "tuning" in raw_result.metadata:
+        chart_payload["tuningSemitones"] = raw_result.metadata["tuning"]
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
-        json.dump(chart.to_dict(), handle, indent=2)
+        json.dump(chart_payload, handle, indent=2)
 
     if args.save_raw:
         raw_output_path = Path(args.save_raw)

@@ -1,120 +1,75 @@
 # ChordFlow Workstation
 
-Transform chord progressions into practice-ready backing tracks.
+Type a chord progression, pick a style, and hear a full backing band that follows
+your chords in real time — a desktop auto-accompaniment workstation.
 
-ChordFlow Workstation is a JUCE-based desktop application for musicians who want to turn chord ideas into something playable without opening a full DAW. The product focuses on a fast workflow for entering chords, selecting a groove style, generating simple accompaniment, and practicing immediately.
+## What it is
 
-## Motivation
+ChordFlow Workstation is a JUCE desktop application inspired by arranger keyboards
+(Yamaha Genos, Korg Pa). You enter a chord progression and choose a *style* — a
+genre groove — and the app generates and plays a complete accompaniment (drums,
+bass, chords, pad) that automatically transposes to follow your chords. Song
+sections (Intro, Main A/B, Fill, Ending) can be triggered live, and you can author
+your own styles in a built-in pattern editor.
 
-Many tools can analyze songs and extract chord progressions:
+It serves two kinds of users:
 
-`Audio File -> Chord Analysis -> Chord Progression`
+- **Performers & songwriters** — enter chords and get an instant band to practice
+  or write over.
+- **Content designers** — create and edit the styles (accompaniment patterns and
+  voices) that drive the instrument.
 
-The workflow often stops there. ChordFlow Workstation is built to bridge the gap between harmonic analysis and actual playing practice.
+## Core loop
 
-Typical user questions:
+```
+Enter chords → pick a style → press play → a band plays your progression
+            → trigger sections live → export MIDI
+```
 
-- What can I do with these chords now?
-- How would these chords sound with a backing track?
-- Can I practice improvisation over this progression right away?
-- Can I try different groove styles without opening a DAW?
+## Key features
 
-## Product Vision
+- Manual chord progression input with a live chord track
+- Built-in styles with drums / bass / chord / pad tracks
+- Real-time auto-accompaniment that transposes to follow the chords
+- Live arranger sections: Intro, Main A, Main B, Fill, Ending
+- Per-track Voice and mix parameters (instrument, volume, pan, octave)
+- Groove controls (tempo, swing, energy)
+- Style editor: author patterns per section on a step grid
+- MIDI export of the arranged result
+- Self-contained audio via built-in synthesis — no external synth required
 
-ChordFlow Workstation is:
+## Tech stack
 
-- a practice-focused accompaniment workstation
-- a lightweight groove exploration tool
-- a fast bridge from chord discovery to musical experimentation
-
-ChordFlow Workstation is not:
-
-- a full DAW
-- a full production suite
-- an AI composition product
-
-## Target Users
-
-Primary users:
-
-- guitar players
-- bass players
-- beginner musicians
-- hobbyists
-- students learning improvisation
-- musicians who find DAWs overwhelming
-
-Secondary users:
-
-- songwriters exploring harmonic ideas
-- musicians experimenting with groove styles
-- users interested in arranger-style workflows
-
-## Core Workflow
-
-`Input Chords -> Select Style -> Generate Accompaniment -> Practice -> Export MIDI`
-
-Example:
-
-`C - G - Am - F`
-
-Choose a style such as `J-Pop`, `Ballad`, or `Blues`, generate a simple drum and bass backing, then practice guitar or bass over it.
-
-## MVP Scope
-
-The current MVP is focused on validating the workflow, not building a full arranger engine.
-
-Included:
-
-- manual chord progression input
-- style selection
-- section controls for `Main A`, `Fill`, and `Ending`
-- groove controls for `Energy` and `Swing`
-- transport controls for `Play`, `Stop`, and `Loop`
-- basic accompaniment generation for drums and bass
-- immediate playback feedback
-
-Deferred until after MVP validation:
-
-- advanced pattern authoring
-- full arranger logic and transition rules
-- recording
-- piano roll or timeline editing
-- plugin targets
-- rich export workflows beyond basic MIDI output
-
-## Tech Stack
-
-- C++
+- C++17
 - JUCE
 - CMake
 
-## Build Instructions
+## Build
 
-JUCE is not vendored in this repository yet.
-
-Option 1:
-
-- Add a JUCE checkout as `ChordFlowWorkstation/JUCE`
-
-Option 2:
-
-- Point CMake at an existing JUCE source checkout
+JUCE is not vendored in this repository.
 
 ```bash
 cd CBBWorkstation
-cmake -S . -B build -DJUCE_SOURCE_DIR=/Users/simjuheun/Developer/JUCE
+cmake -S . -B build -DJUCE_SOURCE_DIR=/path/to/JUCE
 cmake --build build
 ```
 
-Option 3:
+Alternatively point CMake at an installed JUCE package with `-DJUCE_DIR=/path/to/JUCE`,
+or add a JUCE checkout as `CBBWorkstation/JUCE`. If JUCE is missing, CMake stops with
+a clear error describing the expected setup.
 
-- Point CMake at an installed JUCE CMake package
+## Documentation
 
-```bash
-cd CBBWorkstation
-cmake -S . -B build -DJUCE_DIR=/path/to/JUCE
-cmake --build build
-```
+- [docs/PROJECT_DEFINITION.md](docs/PROJECT_DEFINITION.md) — what it is, who it's for, the full feature list
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — implementation design (audio engine, sequencer, transposition, data model)
+- [docs/MVP_SCOPE.md](docs/MVP_SCOPE.md) — current milestone scope
+- [docs/WORKFLOW.md](docs/WORKFLOW.md) — user workflows
+- [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md) — phased plan
 
-If JUCE is missing, CMake stops with a clear error message describing the expected setup.
+## Status
+
+Early development. The UI shell and project architecture are in place; the
+real-time accompaniment engine is the current focus.
+
+> A separate Python prototype for audio→chord import lives in `chordflow-analyzer/`.
+> It is an optional, experimental component and not part of the core application.
